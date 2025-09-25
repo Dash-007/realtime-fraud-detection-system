@@ -107,4 +107,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Dataset provided by [ULB Machine Learning Group](https://www.kaggle.com/mlg-ulb/creditcardfraud)
 - Inspired by real-world fraud detection systems at major financial institutions
-```
