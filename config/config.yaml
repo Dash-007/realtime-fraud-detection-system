@@ -1,0 +1,66 @@
+# Project Configuration File
+# This centralizes all settings for easy management
+
+project:
+  name: "fraud-detection-system"
+  version: "0.1.0"
+  description: "Real-time credit card fraud detection"
+  author: "Your Name"
+  
+data:
+  raw_path: "data/raw"
+  processed_path: "data/processed"
+  features_path: "data/features"
+  filename: "creditcard.csv"
+  test_size: 0.2
+  validation_size: 0.1
+  random_state: 42
+  
+features:
+  # Features to drop (if any)
+  drop_columns: []
+  # Features to scale
+  scale_features: ["Amount", "Time"]
+  # PCA components (V1-V28 already transformed)
+  pca_features: ["V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "V10",
+                 "V11", "V12", "V13", "V14", "V15", "V16", "V17", "V18", "V19",
+                 "V20", "V21", "V22", "V23", "V24", "V25", "V26", "V27", "V28"]
+  
+model:
+  # Model hyperparameters
+  random_forest:
+    n_estimators: 100
+    max_depth: 10
+    min_samples_split: 20
+    min_samples_leaf: 10
+    class_weight: "balanced"
+    
+  xgboost:
+    n_estimators: 100
+    max_depth: 6
+    learning_rate: 0.01
+    scale_pos_weight: 577  # Ratio of negative to positive samples
+    
+  # Training settings
+  cv_folds: 5
+  scoring: "average_precision"  # Good for imbalanced data
+  early_stopping_rounds: 10
+  
+evaluation:
+  # Metrics to track
+  metrics: ["precision", "recall", "f1", "roc_auc", "average_precision"]
+  # Threshold for classification
+  threshold: 0.5
+  # Save confusion matrix
+  save_plots: true
+  plots_path: "models/plots"
+  
+mlflow:
+  # Experiment tracking
+  tracking_uri: "mlruns"
+  experiment_name: "fraud-detection"
+  
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/fraud_detection.log"

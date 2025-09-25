@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+*.egg-info/
+
+# Data files (IMPORTANT: Never commit raw data to Git!)
+data/raw/*.csv
+data/processed/*.csv
+data/features/*.csv
+*.pkl
+*.h5
+*.joblib
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb_checkpoints
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+
+# Models (these can be large)
+models/*.pkl
+models/*.h5
+models/*.joblib
+models/*.pt
+
+# Logs
+logs/
+*.log
+
+# Kaggle
+*.zip
+kaggle.json
