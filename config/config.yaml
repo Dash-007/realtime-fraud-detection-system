@@ -1,11 +1,10 @@
 # Project Configuration File
-# This centralizes all settings for easy management
 
 project:
   name: "fraud-detection-system"
   version: "0.1.0"
   description: "Real-time credit card fraud detection"
-  author: "Your Name"
+  author: "Dakshina Perera"
   
 data:
   raw_path: "data/raw"
