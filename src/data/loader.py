@@ -69,7 +69,7 @@ class DataLoader:
         self._validate_data(df)
         
         # Add metadata
-        self.add_metadata(df)
+        self._add_metadata(df)
         
         logger.info(f"Loaded {len(df):,} transactions")
         logger.info(f"Fraud rate: {df['Class'].mean():.2%}")
@@ -121,3 +121,27 @@ class DataLoader:
             'memory_mb': f"{df.memory_usage().sum() / 1024**2:.1f}",
             'time_span_hours': f"{df['Time'].max() / 3600:.1f}"
         }
+        
+# Test the loader if run directly
+if __name__ == "__main__":
+    print("Testing DataLoader...")
+    print("=" * 50)
+    
+    loader = DataLoader()
+    
+    try:
+        # Load the data
+        df = loader.load_data()
+        
+        # Get basic info
+        info = loader.get_basic_info(df)
+        
+        print("\n📊 Dataset Information:")
+        print("-" * 30)
+        for key, value in info.items():
+            print(f"{key:20s}: {value}")
+        
+        print("\n✅ Data loader working correctly!")
+        
+    except Exception as e:
+        print(f"❌ Error: {e}")
