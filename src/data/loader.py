@@ -98,4 +98,26 @@ class DataLoader:
         
         logger.info("Data validation passed!")
         
-    
+    def _add_metadata(self, df: pd.DataFrame) -> None:
+        """
+        Add useful metadata as Dataframe attributes.
+        """
+        df.attrs['fraud_rate'] = df['Class'].mean()
+        df.attrs['n_frauds'] = df['Class'].sum()
+        df.attrs['n_normal'] = (df['Class'] == 0).sum()
+        df.attrs['imbalance_ratio'] = df.attrs['n_normal'] / df.attrs['n_frauds']
+        
+    def get_basic_info(self, df: pd.DataFrame) -> dict:
+        """
+        Get basic dataset information.
+        """
+        return {
+            'n_transactions': len(df),
+            'n_features': df.shape[1] - 1, # Exclude target
+            'fraud_rate': f"{df['Class'].mean():.2%}",
+            'n_frauds': int(df['Class'].sum()),
+            'n_normal': int((df['Class'] == 0).sum()),
+            'imbalance_ratio': f"{df.attrs['imbalance_ratio']:.1f}:1",
+            'memory_mb': f"{df.memory_usage().sum() / 1024**2:.1f}",
+            'time_span_hours': f"{df['Time'].max() / 3600:.1f}"
+        }
