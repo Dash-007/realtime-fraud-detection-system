@@ -149,14 +149,14 @@ class ModelTrainer:
         # Print results
         print(f"\n{'='*50}")
         print(f"{model_name} Results:")
-        print(f"\n{'='*50}")
+        print(f"{'='*50}")
         print(f"Precision: {precision:.3f} (Of predicted frauds, {precision*100:.1f}% were correct)")
         print(f"Recall: {recall:.3f} (Caught {recall*100:.1f}% of actual frauds)")
         print(f"F1 Score: {f1:.3f}")
         print(f"ROC-AUC: {roc_auc:.3f}")
         print(f"\nConfusion Matrix:")
         print(f"            Predicted")
-        print(f"            Normal          Fraud")
+        print(f"            Normal      Fraud")
         print(f"Normal      {cm[0,0]:6d}    {cm[0,1]:6d}")
         print(f"Fraud       {cm[1,0]:6d}    {cm[1,1]:6d}")
         
