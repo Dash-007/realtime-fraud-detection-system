@@ -107,7 +107,7 @@ class ModelTrainer:
             n_jobs=-1
         )
         rf.fit(X_train, y_train)
-        self.model['Random Forest'] = rf
+        self.models['Random Forest'] = rf
         
         # Evaluate each model
         for model_name, model in self.models.items():
@@ -116,3 +116,53 @@ class ModelTrainer:
             
         return self.models
         
+    def _evaluate_model(self, model, model_name, X_test, y_test):
+        """
+        Evaluate a single model and store results.
+        """
+        from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
+        
+        # Make predictions
+        y_pred = model.predict(X_test)
+        y_pred_proba = model.predict_proba(X_test)[:, 1]
+        
+        # Calculate metrics
+        precision = precision_score(y_test, y_pred)
+        recall = recall_score(y_test, y_pred)
+        f1 = f1_score(y_test, y_pred)
+        roc_auc = roc_auc_score(y_test, y_pred_proba)
+        
+        # Confusion matrix
+        cm = confusion_matrix(y_test, y_pred)
+        
+        # Store results
+        self.results[model_name] = {
+            'precision': precision,
+            'recall': recall,
+            'f1': f1,
+            'roc_auc': roc_auc,
+            'confusion_matrix': cm,
+            'predictions': y_pred,
+            'probabilities': y_pred_proba
+        }
+        
+        # Print results
+        print(f"\n{'='*50}")
+        print(f"{model_name} Results:")
+        print(f"\n{'='*50}")
+        print(f"Precision: {precision:.3f} (Of predicted frauds, {precision*100:.1f}% were correct)")
+        print(f"Recall: {recall:.3f} (Caught {recall*100:.1f}% of actual frauds)")
+        print(f"F1 Score: {f1:.3f}")
+        print(f"ROC-AUC: {roc_auc:.3f}")
+        print(f"\nConfusion Matrix:")
+        print(f"            Predicted")
+        print(f"            Normal          Fraud")
+        print(f"Normal      {cm[0,0]:6d}    {cm[0,1]:6d}")
+        print(f"Fraud       {cm[1,0]:6d}    {cm[1,1]:6d}")
+        
+        # Business metrics
+        false_positives = cm[0,1]
+        false_negatives = cm[1,0]
+        print(f"\nBusiness Impact:")
+        print(f"False alarms: {false_positives} legitimate transactions flagged")
+        print(f"Missed fraud: {false_negatives} fraudulent transactions missed")
