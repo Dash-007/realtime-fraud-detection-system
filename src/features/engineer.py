@@ -80,3 +80,34 @@ class FeatureEngineer:
         Fit and transform in one step.
         """
         return self.fit(df).transform(df)
+    
+    def _create_amount_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Create features based on transaction amount.
+        """
+        
+        # Log transform (handles skewed distribution - reduces impact of extreme values)
+        # Add 1 to avoid log(0)
+        df['Amount_log'] = np.log1p(df['Amount'])
+        
+        # Normalized amount (using training stats - for models that need scaling)
+        if self.amount_stats:
+            df['Amount_scaled'] = (df['Amount'] - self.amount_stats['mean']) / self.amount_stats['std']
+        else:
+            # If not fitted yet
+            df['Amount_scaled'] = (df['Amount'] - df['Amount'].mean()) / df['Amount'].std()
+            
+        # Amount bins (categorical ranges - captures non-linear patterns in ranges)
+        df['Amount_bin'] = pd.cut(df['Amount'],
+                                  bins=[0, 10, 50, 100, 500, 30000],
+                                  labels=['very_low', 'low', 'medium', 'high', 'very_high'])
+        
+        # Convert to numeric
+        df['Amount_bin'] = df['Amount_bin'].cat.codes
+        
+        # Is zero amount?
+        df['Amount_is_zero'] = (df['Amount'] == 0).astype(int)
+        
+        return df
+    
+    
