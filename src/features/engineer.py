@@ -110,4 +110,20 @@ class FeatureEngineer:
         
         return df
     
+    def _create_time_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Create features based on transaction time.
+        """
+        # Hour of day (0-23)
+        df['Hour'] = (df['Time'] / 3600) % 24
+        
+        # Part of the day
+        df['Is_night'] = df['Hour'].apply(lambda x: 1 if x < 6 or x > 22 else 0)
+        df['Is_weekend_hour'] = df['Hour'].apply(lambda x: 1 if x in [0, 1, 22, 23] else 0)
+        
+        # Day from start (assuming Time is seconds from start)
+        df['Day'] = df['Time'] // (24 * 3600)
+        
+        return df
+    
     
