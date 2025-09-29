@@ -6,7 +6,7 @@ Handles training, validation, and model comparison.
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix
@@ -73,5 +73,46 @@ class ModelTrainer:
         
         return X_train_scaled, X_test_scaled, y_train, y_test
     
-    
+    def train_baseline_models(self, X_train, X_test, y_train, y_test):
+        """
+        Train multiple baseline models.
+        
+        Returns:
+            Dictionary of trained models
+        """
+        # Calculate class weight for imbalance
+        n_normal = (y_train == 0).sum()
+        n_fraud = (y_train == 1).sum()
+        class_weight_ratio = n_normal / n_fraud
+        
+        logger.info(f"\nClass weight ratio: {class_weight_ratio:.1f}:1")
+        
+        # Mpdel 1: Logitic Regression (simple, interpretable)
+        logger.info("\nTraining Logistic Regression...")
+        lr = LogisticRegression(
+            class_weight='balanced', # Handles imbalance
+            random_state=self.random_state,
+            max_iter=1000            
+        )
+        lr.fit(X_train, y_train)
+        self.models['Logistic Regression'] = lr
+        
+        # Model 2: Random Forest (handles non-linearity)
+        logger.info("Training Random Forest...")
+        rf = RandomForestClassifier(
+            n_estimators=100,
+            max_depth=10,
+            class_weight='balanced', # Handle imbalance
+            random_state=self.random_state,
+            n_jobs=-1
+        )
+        rf.fit(X_train, y_train)
+        self.model['Random Forest'] = rf
+        
+        # Evaluate each model
+        for model_name, model in self.models.items():
+            logger.info(f"\nEvaluating {model_name}...")
+            self._evaluate_model(model, model_name, X_test, y_test)
+            
+        return self.models
         
