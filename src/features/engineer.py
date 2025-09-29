@@ -143,3 +143,35 @@ class FeatureEngineer:
         
         return df
     
+# Test the feature engineer
+if __name__ == "__main__":
+    print("Testing FeatureEngineer...")
+    
+    # import our data loader
+    import sys
+    import os
+    sys.path.append('../..')
+    from src.data.loader import DataLoader
+    
+    # Load data
+    loader = DataLoader()
+    df = loader.load_data()
+    
+    # Test feature engineering
+    engineer = FeatureEngineer()
+    
+    # Original features
+    original_features = df.shape[1] - 1
+    print(f"Original features: {original_features} features")
+    
+    # Create new features
+    df_engineered = engineer.fit_transform(df)
+    
+    # New features
+    new_features = df_engineered.shape[1] - 1
+    print(f"After engineering: {new_features} features")
+    print(f"New features created: {new_features - original_features}")
+    
+    # Show some new features
+    new_features_names = [col for col in df_engineered.columns if col not in df.columns]
+    print(f"\nNew features: {new_features_names}")
