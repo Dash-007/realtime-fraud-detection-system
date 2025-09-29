@@ -71,7 +71,7 @@ class FeatureEngineer:
         self.feature_names = [col for col in df_new.columns
                               if col not in ['Class', 'Time']]
         
-        logger.info(f"Created {len(self.feature_names)} total features.")
+        logger.info(f"Created {len(self.feature_names)} total features (excluding 'Time').")
         
         return df_new
     
