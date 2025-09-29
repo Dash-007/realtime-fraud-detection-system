@@ -126,4 +126,20 @@ class FeatureEngineer:
         
         return df
     
+    def _create_statistical_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Create statistical combination features.
+        """
+        # Interaction between most important PCA features
+        # Based on the EDA, V10 and V14 were most important
+        df['V10_V14_interaction'] = df['V10'] * df['V14']
+        
+        # Sum of top negative features (fraud indicators from EDA)
+        df['negative_features_sum'] = df[['V10', 'V14', 'V16', 'V17']].sum(axis=1)
+        
+        # Max absolute value among top features
+        top_features = ['V10', 'V14', 'V16', 'V17', 'V11', 'V12']
+        df['max_abs_top_features'] = df[top_features].abs().max(axis=1)
+        
+        return df
     
