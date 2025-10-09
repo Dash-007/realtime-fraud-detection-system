@@ -25,7 +25,9 @@ This API provides real-time fraud detection for credit card transactions using a
 """
 
 # Model settings
-MODEL_PATH = Path("models/production_model_ensemble.pkl")
+# Get the project root directory (parent of api/)
+PROJECT_ROOT = Path(__file__).parent.parent
+MODEL_PATH = PROJECT_ROOT / "models" / "production_model_ensemble.pkl"
 MODEL_VERSION = "ensemble_v1"
 
 # Performance settings
@@ -34,4 +36,4 @@ REQUEST_TIMEOUT = 30
 
 # Logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-LOF_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
