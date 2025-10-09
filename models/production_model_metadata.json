@@ -1,0 +1,29 @@
+{
+  "model_type": "Ensemble (RF + XGBoost)",
+  "training_date": "2025-10-08 20:44:01",
+  "training_technique": "SMOTE + Threshold Optimization",
+  "optimal_threshold": 0.7039565574222049,
+  "performance": {
+    "precision": 0.919,
+    "recall": 0.806,
+    "f1": 0.859,
+    "roc_auc": 0.9847460966660159,
+    "false_alarms": 7,
+    "missed_frauds": 19,
+    "caught_frauds": 79
+  },
+  "business_metrics": {
+    "false_alarm_ratio": 0.089,
+    "fraud_catch_rate": 0.806,
+    "precision_at_threshold": 0.919
+  },
+  "training_details": {
+    "smote_ratio": 0.1,
+    "n_training_samples": 250196,
+    "n_features": 40,
+    "ensemble_models": [
+      "RandomForest",
+      "XGBoost"
+    ]
+  }
+}
