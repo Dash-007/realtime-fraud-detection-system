@@ -5,12 +5,14 @@ FastAPI application for fraud detection
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
 import pandas as pd
 import numpy as np
 import joblib
 import uuid
 from datetime import datetime, timedelta
+import time
 from typing import List
 import logging
 import sys
@@ -113,6 +115,34 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    """
+    Log all incoming requests with timing.
+    """
+    
+    async def dispatch(self, request, call_next):
+        # Start timer
+        start_time = time.time()
+        
+        # Log incoming requests
+        logger.info(f"Incoming request: {request.method} {request.url.path}")
+        
+        # Process request
+        response = await call_next(request)
+        
+        # Calculate duration
+        duration = time.time() - start_time
+        
+        # Log response
+        logger.info(
+            f"Completed {request.method} {request.url.path}"
+            f"Status: {response.status_code} Duration: {duration:3f}s"
+        )
+        
+        return response
+    
+app.add_middleware(RequestLoggingMiddleware)
     
 # Helper functions
 def prepare_features(transaction: TransactionFeatures) -> pd.DataFrame:
