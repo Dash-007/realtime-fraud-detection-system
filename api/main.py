@@ -142,35 +142,56 @@ def prepare_features(transaction: TransactionFeatures) -> pd.DataFrame:
 def make_prediction(features_df: pd.DataFrame) -> dict:
     """
     Make fraud prediction using the loaded model.
+    
+    Raises:
+        ModelNotLoadedError: If model package not loaded
+        PredictionError: If prediction fails
     """
-    # Get model components
-    ensemble_model = model_package['ensemble_model']
-    scaler = model_package['scaler']
-    threshold = model_package['optimal_threshold']
+    # Double check model is loaded
+    if model_package is None:
+        raise ModelNotLoadedError()
     
-    # Scale features
-    features_scaled = scaler.transform(features_df)
-    
-    # Get probability
-    fraud_probability = ensemble_model.predict_proba(features_scaled)[0, 1]
-    
-    # Apply threshold
-    is_fraud = fraud_probability >= threshold
-    
-    # Determine risk level
-    if fraud_probability > 0.8:
-        risk_level = "HIGH"
-    elif fraud_probability > 0.5:
-        risk_level = "MEDIUM"
-    else:
-        risk_level = "LOW"
+    try:
+        # Get model components
+        ensemble_model = model_package['ensemble_model']
+        scaler = model_package['scaler']
+        threshold = model_package['optimal_threshold']
         
-    return {
-        'is_fraud': bool(is_fraud),
-        'fraud_probability': float(fraud_probability),
-        'risk_level': risk_level,
-        'threshold_used': float(threshold)
-    }
+        # Scale features
+        features_scaled = scaler.transform(features_df)
+        
+        # Get probability
+        fraud_probability = ensemble_model.predict_proba(features_scaled)[0, 1]
+        
+        # Validate probability is in valid range
+        if not 0 <= fraud_probability <= 1:
+            logger.error(f"Invalid probability: {fraud_probability}")
+            raise PredictionError("Model returned invalid probability")
+        
+        # Apply threshold
+        is_fraud = fraud_probability >= threshold
+        
+        # Determine risk level
+        if fraud_probability > 0.8:
+            risk_level = "HIGH"
+        elif fraud_probability > 0.5:
+            risk_level = "MEDIUM"
+        else:
+            risk_level = "LOW"
+            
+        return {
+            'is_fraud': bool(is_fraud),
+            'fraud_probability': float(fraud_probability),
+            'risk_level': risk_level,
+            'threshold_used': float(threshold)
+        }
+        
+    except ValueError as e:
+        logger.error(f"Value error in prediction: {e}")
+        raise PredictionError(f"Invalid input data: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected prediction error: {e}")
+        raise PredictionError(f"Prediction failed: {str(e)}")
     
 # API Endpoints
 @app.get("/", tags=["General"])
