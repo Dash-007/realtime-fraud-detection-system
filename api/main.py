@@ -4,12 +4,15 @@ FastAPI application for fraud detection
 
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
 import pandas as pd
 import numpy as np
 import joblib
 import uuid
 from datetime import datetime, timedelta
+import time
 from typing import List
 import logging
 import sys
@@ -32,6 +35,13 @@ from api.config import (
     MODEL_PATH,
     MODEL_VERSION,
     LOG_LEVEL
+)
+
+from api.exceptions import(
+    ModelNotLoadedError,
+    InvalidTransactionError,
+    PredictionError,
+    FeatureEngineeringError
 )
 
 # Set up logging
@@ -79,6 +89,24 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Global exception handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    """
+    Catch-all exception handler for unhandled errors.
+    Prevents server from crashing and leaking sensitive info.
+    """
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "error": "Internal server error",
+            "detail": "An unexpected error occured. Please contact support.", # that would be me
+            "request_id": str(uuid.uuid4()) # for tracking
+        }
+    )
+
 # Add CORS middleware for web frontends
 app.add_middleware(
     CORSMiddleware,
@@ -87,58 +115,132 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    """
+    Log all incoming requests with timing.
+    """
+    
+    async def dispatch(self, request, call_next):
+        # Start timer
+        start_time = time.time()
+        
+        # Log incoming requests
+        logger.info(f"Incoming request: {request.method} {request.url.path}")
+        
+        # Process request
+        response = await call_next(request)
+        
+        # Calculate duration
+        duration = time.time() - start_time
+        
+        # Log response
+        logger.info(
+            f"Completed {request.method} {request.url.path}"
+            f"Status: {response.status_code} Duration: {duration:3f}s"
+        )
+        
+        return response
+    
+app.add_middleware(RequestLoggingMiddleware)
     
 # Helper functions
 def prepare_features(transaction: TransactionFeatures) -> pd.DataFrame:
     """
     Convert transaction to DataFrame with engineered features.
+    
+    Raises:
+        ModelNotLoadedError: If model package not loaded
+        FeatureEngineeringError: If feature engineering fails
     """
-    # Convert to dict and create DataFrame
-    data = transaction.model_dump()
-    df = pd.DataFrame([data])
+    # Check if the model is loaded
+    if model_package is None:
+        logger.error("Model package not loaded")
+        raise ModelNotLoadedError()
     
-    # Apply feature engineering
-    engineer = model_package['feature_engineer']
-    df_engineered = engineer.transform(df)
+    try:
+        # Convert to dict and create DataFrame
+        data = transaction.model_dump()
+        df = pd.DataFrame([data])
+        
+        # Apply feature engineering
+        engineer = model_package['feature_engineer']
+        df_engineered = engineer.transform(df)
+        
+        # Ensure all expected features
+        expected_features = model_package['feature_names']
+        
+        # Check for missing features
+        missing_features = set(expected_features) - set(df_engineered.columns)
+        if missing_features:
+            logger.error(f"Missing features after engineering: {missing_features}")
+            raise FeatureEngineeringError(
+                f"Missing required features: {list(missing_features)}"
+            )
+            
+        df_final = df_engineered[expected_features]
+        return df_final
     
-    # Ensure all expected features
-    expected_features = model_package['feature_names']
-    df_final = df_engineered[expected_features]
-    
-    return df_final
+    except KeyError as e:
+        logger.error(f"Feature engineering error: Missing key {e}")
+        raise FeatureEngineeringError(f"Missing required feature: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected feature engineering error: {e}")
+        raise FeatureEngineeringError(f"Feature engineering failed: {str(e)}")
 
 def make_prediction(features_df: pd.DataFrame) -> dict:
     """
     Make fraud prediction using the loaded model.
+    
+    Raises:
+        ModelNotLoadedError: If model package not loaded
+        PredictionError: If prediction fails
     """
-    # Get model components
-    ensemble_model = model_package['ensemble_model']
-    scaler = model_package['scaler']
-    threshold = model_package['optimal_threshold']
+    # Double check model is loaded
+    if model_package is None:
+        raise ModelNotLoadedError()
     
-    # Scale features
-    features_scaled = scaler.transform(features_df)
-    
-    # Get probability
-    fraud_probability = ensemble_model.predict_proba(features_scaled)[0, 1]
-    
-    # Apply threshold
-    is_fraud = fraud_probability >= threshold
-    
-    # Determine risk level
-    if fraud_probability > 0.8:
-        risk_level = "HIGH"
-    elif fraud_probability > 0.5:
-        risk_level = "MEDIUM"
-    else:
-        risk_level = "LOW"
+    try:
+        # Get model components
+        ensemble_model = model_package['ensemble_model']
+        scaler = model_package['scaler']
+        threshold = model_package['optimal_threshold']
         
-    return {
-        'is_fraud': bool(is_fraud),
-        'fraud_probability': float(fraud_probability),
-        'risk_level': risk_level,
-        'threshold_used': float(threshold)
-    }
+        # Scale features
+        features_scaled = scaler.transform(features_df)
+        
+        # Get probability
+        fraud_probability = ensemble_model.predict_proba(features_scaled)[0, 1]
+        
+        # Validate probability is in valid range
+        if not 0 <= fraud_probability <= 1:
+            logger.error(f"Invalid probability: {fraud_probability}")
+            raise PredictionError("Model returned invalid probability")
+        
+        # Apply threshold
+        is_fraud = fraud_probability >= threshold
+        
+        # Determine risk level
+        if fraud_probability > 0.8:
+            risk_level = "HIGH"
+        elif fraud_probability > 0.5:
+            risk_level = "MEDIUM"
+        else:
+            risk_level = "LOW"
+            
+        return {
+            'is_fraud': bool(is_fraud),
+            'fraud_probability': float(fraud_probability),
+            'risk_level': risk_level,
+            'threshold_used': float(threshold)
+        }
+        
+    except ValueError as e:
+        logger.error(f"Value error in prediction: {e}")
+        raise PredictionError(f"Invalid input data: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected prediction error: {e}")
+        raise PredictionError(f"Prediction failed: {str(e)}")
     
 # API Endpoints
 @app.get("/", tags=["General"])
