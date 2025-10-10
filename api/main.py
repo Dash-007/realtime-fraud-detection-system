@@ -34,6 +34,13 @@ from api.config import (
     LOG_LEVEL
 )
 
+from api.exceptions import(
+    ModelNotLoadedError,
+    InvalidTransactionError,
+    PredictionError,
+    FeatureEngineeringError
+)
+
 # Set up logging
 logging.basicConfig(level=LOG_LEVEL)
 logger = logging.getLogger(__name__)
@@ -92,20 +99,45 @@ app.add_middleware(
 def prepare_features(transaction: TransactionFeatures) -> pd.DataFrame:
     """
     Convert transaction to DataFrame with engineered features.
+    
+    Raises:
+        ModelNotLoadedError: If model package not loaded
+        FeatureEngineeringError: If feature engineering fails
     """
-    # Convert to dict and create DataFrame
-    data = transaction.model_dump()
-    df = pd.DataFrame([data])
+    # Check if the model is loaded
+    if model_package is None:
+        logger.error("Model package not loaded")
+        raise ModelNotLoadedError()
     
-    # Apply feature engineering
-    engineer = model_package['feature_engineer']
-    df_engineered = engineer.transform(df)
+    try:
+        # Convert to dict and create DataFrame
+        data = transaction.model_dump()
+        df = pd.DataFrame([data])
+        
+        # Apply feature engineering
+        engineer = model_package['feature_engineer']
+        df_engineered = engineer.transform(df)
+        
+        # Ensure all expected features
+        expected_features = model_package['feature_names']
+        
+        # Check for missing features
+        missing_features = set(expected_features) - set(df_engineered.columns)
+        if missing_features:
+            logger.error(f"Missing features after engineering: {missing_features}")
+            raise FeatureEngineeringError(
+                f"Missing required features: {list(missing_features)}"
+            )
+            
+        df_final = df_engineered[expected_features]
+        return df_final
     
-    # Ensure all expected features
-    expected_features = model_package['feature_names']
-    df_final = df_engineered[expected_features]
-    
-    return df_final
+    except KeyError as e:
+        logger.error(f"Feature engineering error: Missing key {e}")
+        raise FeatureEngineeringError(f"Missing required feature: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected feature engineering error: {e}")
+        raise FeatureEngineeringError(f"Feature engineering failed: {str(e)}")
 
 def make_prediction(features_df: pd.DataFrame) -> dict:
     """
