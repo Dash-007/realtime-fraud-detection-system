@@ -4,6 +4,7 @@ FastAPI application for fraud detection
 
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import pandas as pd
 import numpy as np
@@ -85,6 +86,24 @@ app = FastAPI(
     description=API_DESCRIPTION,
     lifespan=lifespan
 )
+
+# Global exception handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    """
+    Catch-all exception handler for unhandled errors.
+    Prevents server from crashing and leaking sensitive info.
+    """
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "error": "Internal server error",
+            "detail": "An unexpected error occured. Please contact support.", # that would be me
+            "request_id": str(uuid.uuid4()) # for tracking
+        }
+    )
 
 # Add CORS middleware for web frontends
 app.add_middleware(
