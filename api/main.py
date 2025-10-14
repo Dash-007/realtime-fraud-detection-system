@@ -20,6 +20,7 @@ from pathlib import Path
 
 # Add parent directory to path to import modules
 sys.path.append(str(Path(__file__).parent.parent))
+from api.logging_config import structured_logger
 
 from api.models import (
     TransactionFeatures,
@@ -43,9 +44,6 @@ from api.exceptions import(
     PredictionError,
     FeatureEngineeringError
 )
-
-import uuid
-from api.logging_config import structured_logger
 
 # Set up logging
 logging.basicConfig(level=LOG_LEVEL)
@@ -329,6 +327,7 @@ async def predict_single(transaction: TransactionFeatures, request: Request):
     """
     # Get request IF drom middleware
     request_id = request.state.request_id
+    
     try:
         # Prepare features
         features_df = prepare_features(transaction)
