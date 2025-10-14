@@ -27,8 +27,14 @@ great-expectations
 # Experiment tracking (optional but impressive)
 mlflow
 
+# Dashboard and visualization
+streamlit
+shap
+
+# Additional plotting
+plotly
+
 # For later - commented out for now
 # fastapi
 # uvicorn
 # boto3
-# streamlit
