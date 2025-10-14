@@ -2,7 +2,7 @@
 FastAPI application for fraud detection
 """
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -43,6 +43,9 @@ from api.exceptions import(
     PredictionError,
     FeatureEngineeringError
 )
+
+import uuid
+from api.logging_config import structured_logger
 
 # Set up logging
 logging.basicConfig(level=LOG_LEVEL)
@@ -142,7 +145,45 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         
         return response
     
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    """
+    Add unique request ID to every request
+    """
+    
+    async def dispatch(self, request, call_next):
+        # Generate unique request ID
+        request_id = str(uuid.uuid4())
+        
+        # Add to request state (accessible in endpoints)
+        request.state.request_id = request_id
+        
+        # Log incoming request
+        structured_logger.log_request(
+            method=request.method,
+            path=request.url.path,
+            request_id=request_id,
+            client_ip=request.client.host if request.client else None
+        )
+        
+        # Process request
+        start_time = time.time()
+        response = await call_next(request)
+        duration_ms = (time.time() - start_time) * 1000
+        
+        # Log response
+        structured_logger.log_response(
+            request_id=request_id,
+            status_code=response.status_code,
+            duration_ms=duration_ms
+        )
+        
+        # Add request ID to response headers
+        response.headers["X-Request-ID"] = request_id
+        
+        return response
+    
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(RequestIDMiddleware)
     
 # Helper functions
 def prepare_features(transaction: TransactionFeatures) -> pd.DataFrame:
@@ -280,13 +321,14 @@ async def health_check():
 @app.post("/predict",
           response_model=PredictionResponse,
           tags=["Predictions"])
-async def predict_single(transaction: TransactionFeatures):
+async def predict_single(transaction: TransactionFeatures, request: Request):
     """
     Predict fraud for a single transaction.
     
     Returns prediction with probability and risk assessment.
     """
-    
+    # Get request IF drom middleware
+    request_id = request.state.request_id
     try:
         # Prepare features
         features_df = prepare_features(transaction)
@@ -294,12 +336,14 @@ async def predict_single(transaction: TransactionFeatures):
         # Make prediction
         prediction = make_prediction(features_df)
         
-        # Generate predition ID
-        prediction_id = f"pred_{uuid.uuid4()}"
-        
-        # Log predition
-        logger.info(f"Prediction {prediction_id}: fraud={prediction['is_fraud']},"
-                    f"prob={prediction['fraud_probability']:.3f}")
+        # Log prediction details
+        structured_logger.log_prediction(
+            request_id=request_id,
+            fraud_probability=prediction['fraud_probability'],
+            is_fraud=prediction['is_fraud'],
+            risk_level=prediction['risk_level'],
+            amount=transaction.Amount
+        )
         
         return PredictionResponse(
             is_fraud=prediction['is_fraud'],
@@ -307,12 +351,16 @@ async def predict_single(transaction: TransactionFeatures):
             risk_level=prediction['risk_level'],
             threshold_used=prediction['threshold_used'],
             model_version=MODEL_VERSION,
-            prediction_id=prediction_id,
+            prediction_id=request_id,  # Use request ID
             timestamp=datetime.utcnow()
         )
         
     except Exception as e:
-        logger.error(f"Prediction error: {e}")
+        structured_logger.log_error(
+            request_id=request_id,
+            error_type=type(e).__name__,
+            error_message=str(e)
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Prediction failed: {str(e)}"
