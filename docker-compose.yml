@@ -1,0 +1,28 @@
+services:
+  # Main API service
+  fraud-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fraud-detection-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount models directory (to update model without rebuilding)
+      - ./models:/app/models:ro  # :ro = read-only
+    environment:
+      - LOG_LEVEL=INFO
+      - MODEL_VERSION=ensemble_v1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - fraud-detection-network
+
+networks:
+  fraud-detection-network:
+    driver: bridge
