@@ -47,7 +47,7 @@ def load_model_and_explainer():
         
         # Create SHAP explainer
         # Using TreeExplainer for tree-based models (RF, XGBoost)
-        explainer = SHAP.TreeExplainer(ensemble_model)
+        explainer = shap.TreeExplainer(ensemble_model)
         
         return {
             'model': ensemble_model,
@@ -113,3 +113,144 @@ with col3:
     st.metric("High-Risk Features", f"{negative_count}/4")
     
 st.markdown("---")
+
+# Analyze button
+if st.button("Explain Prediction", type="primary", width="stretch"):
+    with st.spinner("Computing SHAP values..."):
+        try:
+            # Prepare features
+            df = pd.DataFrame([transaction])
+            df_engineered = components['engineer'].transform(df)
+            X_prepared = df_engineered[components['feature_names']]
+            X_scaled = components['scaler'].transform(X_prepared)
+            
+            # Get prediction
+            pred_proba = components['model'].predict_proba(X_scaled)[0, 1]
+            
+            # Calculate SHAP values
+            shap_values = components['explainer'].shap_values(X_scaled)
+            
+            # For binary classification, shap_values could be a list
+            if isinstance(shap_values, list):
+                shap_values = shap_values[1] # Get values for fraud class
+                
+            # Get base value (expected value)
+            base_value = components['explainer'].expected_value
+            if isinstance(base_value, list):
+                base_value = base_value[1]
+                
+            st.markdown("---")
+            st.header("Prediction Results")
+            
+            # Display prediction
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.metric("Fraud Probability", format_probability(pred_proba), help="Model's confidence that this is fraud")
+                
+            with col2:
+                classification = "FRAUD" if pred_proba > 0.704 else "LEGITIMATE"
+                st.metric("Classification", classification)
+                
+            with col3:
+                risk = "HIGH" if pred_proba > 0.8 else "MEDIUM" if pred_proba > 0.5 else "LOW"
+                st.metric("Risk Level", risk)
+                
+            st.markdown("---")
+            st.header("SHAP Explanation")
+            
+            # Create SHAP explanation object
+            explanation = shap.Explanation(
+                values=shap_values[0],
+                base_values=base_value,
+                data=X_scaled[0],
+                feature_names=components['feature_names']
+            )
+            
+            # Waterfall plot
+            st.subheader("Waterfall Plot: Feature Contributions")
+            st.markdown("""
+            This plot shows how each feature pushes the prediction from the base value toward the final prediction.
+            
+            - **Red bars** push toward FRAUD (increase probability)
+            - **Blue bars** push toward LEGITIMATE (decrease probability)
+            - Bar length shows strenth of contribution
+            """)
+            
+            fig, ax = plt.subplots(figsize=(10, 8))
+            shap.plots.waterfall(explanation, max_display=15, show=False)
+            st.pyplot(fig)
+            plt.close()
+            
+            st.markdown("---")
+            
+            # Feature importance plot
+            st.subheader("Feature Importance: Top Contributors")
+            st.markdown("Features ranked by absolute contribution to this prediction:")
+            
+            fig, ax = plt.subplots(figsize=(10, 6))
+            shap.plots.bar(explanation, max_display=15, show=False)
+            st.pyplot(fig)
+            plt.close()
+            
+            st.markdown("---")
+            
+            # Detailed breakdown
+            st.sidebar("Detailed Feature Analysis")
+            
+            # Dataframe for SHAP values
+            shap_df = pd.DataFrame({
+                'Feature': components['feature_names'],
+                'Feature Value': X_scaled[0],
+                'SHAP Value': shap_values[0],
+                'Absolute Impact': np.abs(shap_values[0])
+            }).sort_values('Absolute Impact', ascending=False)
+            
+            # Top 10 features
+            st.markdown("**Top 10 Most Influential Features:**")
+            
+            top_features = shap_df.head(10).copy()
+            top_features['Impact Direction'] = top_features['SHAP Value'].apply(
+                lambda x: 'Toward Fraud' if x > 0 else 'Toward Legitimate'
+            )
+            top_features['SHAP Value'] = top_features['SHAP Value'].round(4)
+            top_features['Feature Value'] = top_features['Feature Value'].round(4)
+            
+            st.dataframe(
+                top_features[['Feature', 'Feature Value', 'SHAP Value', 'Impact Direction']],
+                width='stretch',
+                hide_index=True
+            )
+            
+            # Interpretation
+            st.markdown("---")
+            st.subheader("Interpretation")
+            
+            # Analyze top contributors
+            top_fraud_features = shap_df[shap_df['SHAP Value'] > 0].head(3)
+            top_legit_features = shap_df[shap_df['SHAP Value'] < 0].head(3)
+            
+            if len(top_fraud_features) > 0:
+                st.markdown('**Key Fraud Indicators:**')
+                for _, row in top_fraud_features.iterrows():
+                    st.write(f"- **{row['Feature']}** (value: {row['Feature Value']:.3f}) contributes +{row['SHAP Value']:.4f} toward fraud")
+                    
+            if len(top_legit_features) > 0:
+                st.markdown("**Key Legitimate Indicators:**")
+                for _, row in top_legit_features.iterrows():
+                    st.write(f"- **{row['Feature']}** (value: {row['Feature Value']:.3f}) contributes {row['SHAP Value']:.4f} toward legitimate")
+                    
+            # Summary
+            st.info(f"""
+            **Summary:**
+            
+            The model's base prediction (average across all data) is {format_probability(base_value)}.
+            
+            After considering all features, the final prediction is {format_probability(pred_proba)}.
+            
+            The features shown above had the strongest influence on mvoing the prediction from the base rate the final predicition.
+            """)
+            
+        except Exception as e:
+            st.error(f"Error computing SHAP values: {str(e)}")
+            st.exception(e)
