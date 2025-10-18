@@ -165,7 +165,7 @@ with col2:
     predict_button = st.button(
         "Predict Fraud",
         type="primary",
-        use_container_width=True
+        width='stretch'
     )
 
 # Make prediction
@@ -244,7 +244,7 @@ if predict_button:
             ))
             
             fig.update_layout(height=300)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
             
             # Interpretation
             st.markdown("###  Interpretation")
@@ -294,7 +294,7 @@ if predict_button:
             import pandas as pd
             st.dataframe(
                 pd.DataFrame(summary_data),
-                use_container_width=True,
+                width='stretch',
                 hide_index=True
             )
             
