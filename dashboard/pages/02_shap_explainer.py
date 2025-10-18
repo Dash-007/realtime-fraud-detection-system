@@ -43,7 +43,7 @@ def load_model_and_explainer():
         ensemble_model = model_package['ensemble_model']
         scaler = model_package['scaler']
         feature_engineer = model_package['feature_engineer']
-        feature_names = model_package['feature_name']
+        feature_names = model_package['feature_names']
         
         # Create SHAP explainer
         # Using TreeExplainer for tree-based models (RF, XGBoost)
@@ -254,3 +254,58 @@ if st.button("Explain Prediction", type="primary", width="stretch"):
         except Exception as e:
             st.error(f"Error computing SHAP values: {str(e)}")
             st.exception(e)
+            
+# Info section
+st.markdown("---")
+st.header("Understanding SHAP")
+
+with st.expander("What are SHAP values?", expanded=False):
+    st.markdown("""
+    **SHAP (SHapley Additive exPlanations)** values are a unified measure of feature importance based on game theory.
+    
+    **Key concepts:**
+    
+    1. **Base Value**: The average prediction across all training data (baseline)
+    
+    2. **SHAP Value**: How much a feature pushed the prediction away from the base value
+    - Positive SHAP = pushed toward fraud
+    - Negative SHAP = pushed toward legitimate
+    
+    3. **Final Prediction**: Base value + sum of all SHAP values
+    
+    **Example:**
+    - Base value: 17% (average fraud rate)
+    - V14 contribution: +30% (very negative value indicates fraud)
+    - V2 contribution: -5% (normal value indicates legitimate)
+    - Amount contribution: +10% (small amount indicates fraud)
+    - Final prediction: 17% + 30% - 5% = 10% + ... = 68%
+    """)
+    
+with st.expander("How to interpret the visualizations", expanded=False):
+    st.markdown("""
+    **Waterfall Plot:**
+    - Shows the cumulative effect of features
+    - Starts at base value, adds contributions sequentially
+    - Ends at final prediction
+    - Red bars push UP (toward fraud), blue bars push DOWN (toward legitimate)
+    
+    **Bar Plot:**
+    - Shows absolute impact of each feature
+    - Longer bars = stronger influence
+    - Doesn't show direction, just magnitude
+    
+    **Feature Tables:**
+    - Lists features in order of impact
+    - Shows actual feature values
+    - Shows SHAP values (contributions)
+    - Direction indicator (toward fraud or legitimate)
+    """)
+    
+# Footer
+st.markdown("---")
+st.markdown("""
+***Next Steps:**
+- Try different sample transactions to see how SHAP values change
+- Use **Batch Prediction** to analyze multiple transactions
+- Check **Monitoring** to tract model performace over time (coming soon)
+""")
