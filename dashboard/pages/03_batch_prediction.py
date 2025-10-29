@@ -68,23 +68,77 @@ if use_sample:
         st.session_state.batch_data = pd.DataFrame(samples)
         st.success(f"Generated {n_samples} sample transactions")
         
-    else:
-        st.header("Upload Transaction Data")
+else:
+    st.header("Upload Transaction Data")
+    
+    # File uploader
+    uploaded_file = st.file_uploader(
+        "Choose a CSV file",
+        type=['csv'],
+        help="CSV file should contain columns: Time, Amount, V1-V28"
+    )
+    
+    if uploaded_file is not None:
+        try:
+            df = pd.read_csv(uploaded_file)
+            st.session_state.batch_data = df
+            st.success(f"Loaded {len(df)} transactions from file")
         
-        # File uploader
-        uploaded_file = st.file_uploader(
-            "Choose a CSV file",
-            type=['csv'],
-            help="CSV file should contain columns: Time, Amount, V1-V28"
-        )
-        
-        if uploaded_file is not None:
-            try:
-                df = pd.read_csv(uploaded_file)
-                st.session_state.batch_data = df
-                st.success(f"Loaded {len(df)} transactions from file")
+        except Exception as e:
+            st.error(f"Error reading file: {e}")
             
+# Display and analyze data
+if 'batch_data' in st.session_state and st.session_state.batch_data is not None:
+    df = st.session_state.batch_data
+    
+    st.markdown("---")
+    st.header("Data Preview")
+    
+    # Show basic stats
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Transactions", len(df))
+    with col2:
+        st.metric("Avg Amount", f"${df['Amount'].min():.2f} - ${df['Amount'].max():.2f}")
+        
+    # Show data preview
+    with st.expander("View Transaction Data", expanded=False):
+        st.dataframe(df.head(20), width='stretch')
+        
+    # Analyze button
+    st.markdown("---")
+    
+    if st.button("Analyze All Transactions", type="primary", width="stretch"):
+        with st.spinner(f"Analyzing {len(df)} transactions..."):
+            try:
+                client = get_api_client()
+                
+                # Convert to list of dicts
+                transactions = df.to_dict('records')
+                
+                # Make batch prediction
+                results = client.predict_batch(transactions)
+                client.close()
+                
+                # Store results
+                st.session_state.batch_results = results
+                
+                # Create results dataframe
+                results_df = pd.DataFrame([
+                    {
+                        'Transaction_ID': i+1,
+                        'Amount': transactions[i]['Amount'],
+                        'Fraud_Probability': r.fraud_probability,
+                        'Is_Fraud': r.is_fraud,
+                        'Risk_Level': r.risk_level,
+                        'Prediction_ID': r.prediction_id
+                    } for i, r in enumerate(results)
+                ])
+                
+                st.session_state.results_df = results_df
+                
+                st.success(f"Analysis complete! Processed {len(results)} transactions")
+                
             except Exception as e:
-                st.error(f"Error reading file: {e}")
-                
-                
+                st.error(f"Error during analysis: {str(e)}")
+                st.info("Make sure the API is running")
