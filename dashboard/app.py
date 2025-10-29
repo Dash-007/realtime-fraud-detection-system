@@ -117,14 +117,14 @@ st.markdown("---")
 
 # Navigation Guide
 st.markdown("""
-###  Navigation
+### Navigation
 
 Use the sidebar to navigate between different sections:
 
-1. ** Single Prediction** - Analyze individual transactions
-2. ** SHAP Explainer** - See how the model makes decisions
-3. ** Batch Prediction** - Process multiple transactions
-4. ** Monitoring** - View performance metrics and history
+1. **Single Prediction** - Analyze individual transactions
+2. **SHAP Explainer** - See how the model makes decisions
+3. **Batch Prediction** - Process multiple transactions
+4. **Monitoring** - View performance metrics and history
 
 ---
 
