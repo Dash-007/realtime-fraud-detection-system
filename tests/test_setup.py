@@ -1,4 +1,6 @@
-"""Test that project setup is working correctly."""
+"""
+Test that project setup is working correctly.
+"""
 
 import yaml
 import sys

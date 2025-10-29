@@ -28,12 +28,20 @@ SHAP values show how much each feature contributed to pushing the prediction tow
 """)
 st.markdown("---")
 
+# Sidebar - Model selection
+st.sidebar.header("Explanation Settings")
+
+
+explain_option = st.sidebar.radio(
+    "Explain which model?",
+    options=["Random Forest (Fast)", "XGBoost (Fast)", "Full Ensemble (Slow)"],
+    help="Individual models are faster. Full Ensemble uses KernelExplainer (~30 seconds)."
+)
+
 # Load model
 @st.cache_resource
-def load_model_and_explainer():
-    """
-    Load model and create SHAP explainer (cached for performance)
-    """
+def load_model_and_explainer(explain_option):
+    """Load model and create SHAP explainer (cached for performance)"""
     try:
         # Load the model package
         model_path = Path(__file__).parent.parent.parent / "models" / "production_model_ensemble.pkl"
@@ -45,33 +53,80 @@ def load_model_and_explainer():
         feature_engineer = model_package['feature_engineer']
         feature_names = model_package['feature_names']
         
-        # Create SHAP explainer
-        # Using TreeExplainer for tree-based models (RF, XGBoost)
-        explainer = shap.TreeExplainer(ensemble_model)
+        from sklearn.ensemble import VotingClassifier
+        
+        if isinstance(ensemble_model, VotingClassifier):
+            individual_models = ensemble_model.named_estimators_
+            
+            # Select model based on user choice
+            if "Random Forest" in explain_option and 'rf' in individual_models:
+                model_to_explain = individual_models['rf']
+                model_name = "Random Forest"
+                explainer = shap.TreeExplainer(model_to_explain)
+                
+            elif "XGBoost" in explain_option and 'xgb' in individual_models:
+                model_to_explain = individual_models['xgb']
+                model_name = "XGBoost"
+                explainer = shap.TreeExplainer(model_to_explain)
+                
+            elif "Full Ensemble" in explain_option:
+                model_to_explain = ensemble_model
+                model_name = "Full Ensemble (VotingClassifier)"
+                
+                # For VotingClassifier, we need to use KernelExplainer
+                # Create prediction function
+                def predict_fn(X):
+                    """Prediction function for KernelExplainer"""
+                    return ensemble_model.predict_proba(X)[:, 1]
+                
+                # Create background dataset
+                # Use zeros as a simple baseline (represents "neutral" transaction)
+                n_features = len(feature_names)
+                background = np.zeros((1, n_features))
+                
+                # Create KernelExplainer
+                explainer = shap.KernelExplainer(predict_fn, background)
+                
+            else:
+                # Fallback to first available
+                model_to_explain = list(individual_models.values())[0]
+                model_name = list(individual_models.keys())[0]
+                explainer = shap.TreeExplainer(model_to_explain)
+        else:
+            model_to_explain = ensemble_model
+            model_name = "Model"
+            explainer = shap.TreeExplainer(model_to_explain)
         
         return {
             'model': ensemble_model,
+            'explain_model': model_to_explain,
+            'model_name': model_name,
             'scaler': scaler,
             'engineer': feature_engineer,
             'explainer': explainer,
-            'feature_names': feature_names
+            'feature_names': feature_names,
+            'is_ensemble': "Full Ensemble" in explain_option
         }
-    
+        
     except Exception as e:
         st.error(f"Error loading model: {e}")
+        import traceback
+        st.error(traceback.format_exc())
         return None
-    
+
 # Load model components
 with st.spinner("Loading model and SHAP explainer..."):
-    components = load_model_and_explainer()
+    components = load_model_and_explainer(explain_option)
     
 if components is None:
     st.error("Failed to load model. Please check that the model file exists.")
     st.stop()
     
-st.success("Model and SHAP explainer loaded successfully")
+st.success(f"{components['model_name']} loaded successfully")
+st.info(f"Explaining predictions using {components['model_name']} component")
 
-# Sidebar - Sample selection
+# Sidebar - Sample Selection
+st.sidebar.markdown("---")
 st.sidebar.header("Select Transaction")
 st.sidebar.markdown("Choose a sample to transaction to explain:")
 
@@ -91,7 +146,7 @@ if st.sidebar.button("Load Sample", type="primary"):
     sample_key = sample_options[selected_sample]
     st.session_state.explain_transaction = SAMPLE_TRANSACTIONS[sample_key].copy()
     st.success(f"Loaded: {selected_sample}")
-    
+
 # Initialize
 if 'explain_transaction' not in st.session_state:
     st.session_state.explain_transaction = SAMPLE_TRANSACTIONS['fraud'].copy()
@@ -127,17 +182,42 @@ if st.button("Explain Prediction", type="primary", width="stretch"):
             # Get prediction
             pred_proba = components['model'].predict_proba(X_scaled)[0, 1]
             
-            # Calculate SHAP values
-            shap_values = components['explainer'].shap_values(X_scaled)
-            
-            # For binary classification, shap_values could be a list
-            if isinstance(shap_values, list):
-                shap_values = shap_values[1] # Get values for fraud class
+            # Calculate SHAP values using individual model
+            if components.get('is_ensemble', False):
+                # KernelExplainer for full ensemble (slower)
+                with st.spinner("Computing SHAP values with KernelExplainer (30-60 seconds)..."):
+                    shap_values = components['explainer'].shap_values(X_scaled, nsamples=100)
                 
-            # Get base value (expected value)
-            base_value = components['explainer'].expected_value
-            if isinstance(base_value, list):
-                base_value = base_value[1]
+                # KernelExplainer returns 1D array for single class probability
+                if len(shap_values.shape) > 1:
+                    shap_values = shap_values.flatten()
+                
+                # Base value for KernelExplainer
+                base_value = components['explainer'].expected_value
+                
+            else:
+                # TreeExplainer for individual models (fast)
+                shap_values = components['explainer'].shap_values(X_scaled)
+                
+                # Handle different SHAP value formats
+                if isinstance(shap_values, list):
+                    shap_values = shap_values[1]  # Get fraud class
+                elif len(shap_values.shape) == 3:
+                    shap_values = shap_values[:, :, 1]
+                elif len(shap_values.shape) == 2 and shap_values.shape[1] == 2:
+                    shap_values = shap_values[:, 1]
+                
+                # Ensure 1D array
+                if len(shap_values.shape) > 1:
+                    shap_values = shap_values.flatten()
+                
+                # Get base value
+                base_value = components['explainer'].expected_value
+                if isinstance(base_value, (list, np.ndarray)):
+                    if len(base_value) > 1:
+                        base_value = base_value[1]
+                    else:
+                        base_value = base_value[0]
                 
             st.markdown("---")
             st.header("Prediction Results")
@@ -146,7 +226,7 @@ if st.button("Explain Prediction", type="primary", width="stretch"):
             col1, col2, col3 = st.columns(3)
             
             with col1:
-                st.metric("Fraud Probability", format_probability(pred_proba), help="Model's confidence that this is fraud")
+                st.metric("Fraud Probability", format_probability(pred_proba), help="Full ensemble prediction")
                 
             with col2:
                 classification = "FRAUD" if pred_proba > 0.704 else "LEGITIMATE"
@@ -156,12 +236,14 @@ if st.button("Explain Prediction", type="primary", width="stretch"):
                 risk = "HIGH" if pred_proba > 0.8 else "MEDIUM" if pred_proba > 0.5 else "LOW"
                 st.metric("Risk Level", risk)
                 
+            st.caption(f"*Prediction from full ensemble. SHAP explanation from {components['model_name']}.*")
+            
             st.markdown("---")
             st.header("SHAP Explanation")
             
             # Create SHAP explanation object
             explanation = shap.Explanation(
-                values=shap_values[0],
+                values=shap_values,
                 base_values=base_value,
                 data=X_scaled[0],
                 feature_names=components['feature_names']
@@ -196,14 +278,14 @@ if st.button("Explain Prediction", type="primary", width="stretch"):
             st.markdown("---")
             
             # Detailed breakdown
-            st.sidebar("Detailed Feature Analysis")
+            st.subheader("Detailed Feature Analysis")
             
             # Dataframe for SHAP values
             shap_df = pd.DataFrame({
                 'Feature': components['feature_names'],
                 'Feature Value': X_scaled[0],
-                'SHAP Value': shap_values[0],
-                'Absolute Impact': np.abs(shap_values[0])
+                'SHAP Value': shap_values,
+                'Absolute Impact': np.abs(shap_values)
             }).sort_values('Absolute Impact', ascending=False)
             
             # Top 10 features
@@ -248,7 +330,7 @@ if st.button("Explain Prediction", type="primary", width="stretch"):
             
             After considering all features, the final prediction is {format_probability(pred_proba)}.
             
-            The features shown above had the strongest influence on mvoing the prediction from the base rate the final predicition.
+            The features shown above had the strongest influence on moving the prediction from the base rate the final predicition.
             """)
             
         except Exception as e:
@@ -304,7 +386,7 @@ with st.expander("How to interpret the visualizations", expanded=False):
 # Footer
 st.markdown("---")
 st.markdown("""
-***Next Steps:**
+**Next Steps:**
 - Try different sample transactions to see how SHAP values change
 - Use **Batch Prediction** to analyze multiple transactions
 - Check **Monitoring** to tract model performace over time (coming soon)
