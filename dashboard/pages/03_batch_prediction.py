@@ -68,3 +68,23 @@ if use_sample:
         st.session_state.batch_data = pd.DataFrame(samples)
         st.success(f"Generated {n_samples} sample transactions")
         
+    else:
+        st.header("Upload Transaction Data")
+        
+        # File uploader
+        uploaded_file = st.file_uploader(
+            "Choose a CSV file",
+            type=['csv'],
+            help="CSV file should contain columns: Time, Amount, V1-V28"
+        )
+        
+        if uploaded_file is not None:
+            try:
+                df = pd.read_csv(uploaded_file)
+                st.session_state.batch_data = df
+                st.success(f"Loaded {len(df)} transactions from file")
+            
+            except Exception as e:
+                st.error(f"Error reading file: {e}")
+                
+                
