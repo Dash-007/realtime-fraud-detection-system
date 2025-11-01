@@ -45,3 +45,6 @@ logs/
 # Kaggle
 *.zip
 kaggle.json
+
+# Helpers
+run.sh
