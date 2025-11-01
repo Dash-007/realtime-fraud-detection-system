@@ -12,6 +12,7 @@ env/
 data/raw/*.csv
 data/processed/*.csv
 data/features/*.csv
+data/generated/*.csv
 *.pkl
 *.h5
 *.joblib
