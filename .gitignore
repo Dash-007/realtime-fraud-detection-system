@@ -46,5 +46,17 @@ logs/
 *.zip
 kaggle.json
 
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+.tox/
+*.cover
+.hypothesis/
+
+# Test batch files
+test_batch_*.csv
+
 # Helpers
 run.sh
