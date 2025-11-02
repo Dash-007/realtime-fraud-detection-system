@@ -257,3 +257,23 @@ class TestModelInfoEndpoint:
         assert "precision" in perf
         assert "recall" in perf
         assert "f1_score" in perf
+        
+class TestDocsEndpoint:
+    """
+    Test API documentation endpoints
+    """
+    
+    def test_docs_endpoint_accessible(self, api_client):
+        """Test that /docs is accessible"""
+        response = api_client.get("/docs")
+        assert response.status_code == status.HTTP_200_OK
+        
+    def test_openai_json_accessible(self, api_client):
+        """test that OpenAPI spec is accessible"""
+        response = api_client.get("/openapi.json")
+        assert response.status_code == status.HTTP_200_OK
+        
+        data = response.json()
+        assert "openapi" in data
+        assert "indo" in data
+        assert "paths" in data
