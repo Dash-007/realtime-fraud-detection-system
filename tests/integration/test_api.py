@@ -225,3 +225,35 @@ class TestAnalyzeEndpoint:
         data = response.json()
         
         assert "recommendation" in data
+        
+class TestModelInfoEndpoint:
+    """
+    Test /model/info endpoint
+    """
+    
+    def test_model_info_returns_200(self, api_client):
+        """Test model info endpoint"""
+        response = api_client.get("/model/info")
+        assert response.status_code == status.HTTP_200_OK
+        
+    def test_model_info_format(self, api_client):
+        """Test model info has correct format"""
+        response = api_client.get("/model/info")
+        data = response.json()
+        
+        assert "model_version" in data
+        assert "model_type" in data
+        assert "features_count" in data
+        assert "threshold" in data
+        
+    def test_model_info_has_performance_metrics(self, api_client):
+        """Test model info includes performace metrics"""
+        response = api_client.get("/model/info")
+        data = response.json()
+        
+        assert "performance" in data
+        perf = data["performace"]
+        
+        assert "precision" in perf
+        assert "recall" in perf
+        assert "f1_score" in perf
