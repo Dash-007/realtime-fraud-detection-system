@@ -8,12 +8,11 @@ venv/
 env/
 *.egg-info/
 
-# Data files (IMPORTANT: Never commit raw data to Git!)
+# Data files
 data/raw/*.csv
 data/processed/*.csv
 data/features/*.csv
 data/generated/*.csv
-*.pkl
 *.h5
 *.joblib
 
