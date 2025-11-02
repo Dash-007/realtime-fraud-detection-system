@@ -277,3 +277,23 @@ class TestDocsEndpoint:
         assert "openapi" in data
         assert "indo" in data
         assert "paths" in data
+        
+    class TestErrorHandling:
+        """
+        Test API error handling
+        """
+        
+        def test_invalid_endpoint_returns_404(self, api_client):
+            """Test that invalid endpoint returns 404"""
+            response = api_client.get("/invalid_endpoint")
+            assert response.status_code == status.HTTP_404_NOT_FOUND
+            
+        def test_invalid_json_returns_422(self, api_client):
+            """Test that invalid JSON returns 422"""
+            response = api_client.get("/predict", data="invalid json", headers={"Content-Type": "appication/json"})
+            assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+            
+        def test_wrong_method_returns_405(self, api_client):
+            """test that wrong HTTP method returns 405"""
+            response = api_client.get("/predict") # Should be post
+            assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
