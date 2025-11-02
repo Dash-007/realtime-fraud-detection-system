@@ -34,6 +34,13 @@ shap
 # Additional plotting
 plotly
 
+# Testing and Quality
+pytest
+pytest-cov
+pytest-mock
+pytest-asyncio
+httpx
+
 # For later - commented out for now
 # fastapi
 # uvicorn
