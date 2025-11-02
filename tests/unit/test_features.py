@@ -132,4 +132,24 @@ class TestFeatureEngineer:
         result = engineer.transform(df)
         assert not result.empty
         
+class TestFeatureValidation:
+    """Test feature validation logic"""
+    
+    def test_all_required_features_present(self):
+        """Test that sample data has all required features"""
+        tx = get_sample_transaction()
         
+        # Check V1-V28
+        for i in range(1, 29):
+            assert f'V{i}' in tx
+            
+        # Check basic features
+        assert 'Time' in tx
+        assert 'Amount' in tx
+        
+    def test_feature_data_types(self):
+        """Test that features have correct data types"""
+        tx = get_sample_transaction()
+        
+        for key, value in tx.items():
+            assert isinstance(value, (int, float, np.number))
