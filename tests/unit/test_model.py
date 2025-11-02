@@ -130,3 +130,38 @@ class TestModelPrediction:
         is_fraud = prob >= threshold
         assert isinstance(is_fraud, (bool, np.bool_))
         
+class TestModelPerformance:
+    """
+    Test model performance characteristics
+    """
+    
+    @pytest.fixture
+    def model_components(self):
+        """Load model components"""
+        model_path = Path(__file__).parent.parent.parent / "models" / "production_model_ensemble.pkl"
+        return joblib.load(model_path)
+    
+    def test_threshold_in_valid_range(self, model_components):
+        """Test that threshold is in valid range"""
+        threshold = model_components['threshold']
+        
+        assert 0 < threshold < 1
+        assert threshold > 0.5 # Should be conservative
+        
+    def test_predicition_in_valid_range(self, model_components):
+        """Test that all predicitions are valid probabilities"""
+        transactions = [
+            get_normal_transaction(),
+            get_fraud_transaction(),
+            get_sample_transaction()
+        ]
+        
+        for tx in transactions:
+            df = pd.DataFrame([tx])
+            df_eng = model_components['feature_engineer'].transform(df)
+            X = df_eng[model_components['feature_names']]
+            X_scaled = model_components['scaler'].transform(X)
+            
+            prob = model_components['ensemble_model'].predict_proba(X_scaled)[0, 1]
+            
+            assert 0 <= prob <= 1
