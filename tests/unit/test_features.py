@@ -52,8 +52,11 @@ class TestFeatureEngineer:
         """Test that feature names are consistent"""
         result = engineer.transform(sample_df)
         
-        # Should have Amount_scaled, Time_hour, etc
-        expected_features = ['Amount_scaled', 'Time_hour']
+        # Should have Amount_scaled, Hour, etc
+        expected_features = [
+            'Amount_log', 'Amount_scaled', 'Amount_bin', 'Amount_is_zero',
+            'Hour', 'Is_night', 'Is_weekend_hour', 'Day',
+            'V10_V14_interaction', 'negative_features_sum', 'max_abs_top_features']
         
         for feat in expected_features:
             assert feat in result.columns, f"Missing feature: {feat}"
@@ -83,8 +86,8 @@ class TestFeatureEngineer:
         result = engineer.transform(df)
         
         # Should have time features
-        assert 'Time_hour' in result.columns
-        assert result['Time_hour'].iloc[0] == 1.0
+        assert 'Hour' in result.columns
+        assert result['Hour'].iloc[0] == 1.0
         
     def test_handles_missing_time(self, engineer):
         """Test handling missing Time column"""

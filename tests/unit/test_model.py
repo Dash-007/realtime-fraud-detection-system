@@ -37,7 +37,7 @@ class TestModelLoading:
         """Test that model package has all required components"""
         model_package = joblib.load(model_path)
         
-        required_keys = ['ensemble_model', 'scaler', 'feature_engineer', 'feature_names', 'threshold']
+        required_keys = ['ensemble_model', 'scaler', 'feature_engineer', 'feature_names', 'optimal_threshold']
         
         for key in required_keys:
             assert key in model_package, f"Missing required key: {key}"
@@ -115,7 +115,7 @@ class TestModelPrediction:
         
     def test_threshold_classification(self, model_components):
         """Test that threshold classification works"""
-        threshold = model_components['threshold']
+        threshold = model_components['optimal_threshold']
         
         # Test transaction above threshold
         tx = get_fraud_transaction()
@@ -143,7 +143,7 @@ class TestModelPerformance:
     
     def test_threshold_in_valid_range(self, model_components):
         """Test that threshold is in valid range"""
-        threshold = model_components['threshold']
+        threshold = model_components['optimal_threshold']
         
         assert 0 < threshold < 1
         assert threshold > 0.5 # Should be conservative
