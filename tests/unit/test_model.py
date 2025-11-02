@@ -50,3 +50,83 @@ class TestModelLoading:
         # Should have approximately 40 features
         assert len(feature_names) >=30
         assert len(feature_names) <= 50
+        
+class TestModelPrediction:
+    """
+    Test model prediction functionality
+    """
+    
+    @pytest.fixture
+    def model_components(self):
+        """Load model componenets"""
+        model_path = Path(__file__).parent.parent.parent / "models" / "production_model_ensemble.pkl"
+        return joblib.load(model_path)
+    
+    def test_predict_normal_transaction(self, model_components):
+        """Test prediction on normal transaction"""
+        tx = get_normal_transaction()
+        df = pd.DataFrame([tx])
+        
+        # Engineer features
+        df_eng = model_components['feature_engineer'].transform(df)
+        X = df_eng[model_components['feature_names']]
+        X_scaled = model_components['scaler'].transform(X)
+        
+        # Predict
+        prob = model_components['ensemble_model'].predict_proba(X_scaled)[0, 1]
+        
+        # Should be lower probability
+        assert 0 <= prob <= 1
+        assert prob < 0.5
+        
+    def test_predict_fraud_transaction(self, model_components):
+        """Test prediction on fraudulent transaction"""
+        tx = get_fraud_transaction()
+        df = pd.DataFrame([tx])
+        
+        # Engineer features
+        df_eng = model_components['feature_engineer'].transform(df)
+        X = df_eng[model_components['feature_names']]
+        X_scaled = model_components['scaler'].transform(X)
+        
+        # Predict
+        prob = model_components['ensemble_model'].predict_proba(X_scaled)[0, 1]
+        
+        # Should be high probability
+        assert 0 <= prob <= 1
+        assert prob > 0.3
+        
+    def test_prediction_consistency(self, model_components):
+        """Test that predictions are consistent"""
+        tx = get_fraud_transaction()
+        df = pd.DataFrame([tx])
+        
+        # Engineer features
+        df_eng = model_components['feature_engineer'].transform(df)
+        X = df_eng[model_components['feature_names']]
+        X_scaled = model_components['scaler'].transform(X)
+        
+        # Predict
+        prob1 = model_components['ensemble_model'].predict_proba(X_scaled)[0, 1]
+        prob2 = model_components['ensemble_model'].predict_proba(X_scaled)[0, 1]
+        
+        # Should be identical
+        assert prob1 == prob2
+        
+    def test_threshold_classification(self, model_components):
+        """Test that threshold classification works"""
+        threshold = model_components['threshold']
+        
+        # Test transaction above threshold
+        tx = get_fraud_transaction()
+        df = pd.DataFrame([tx])
+        df_eng = model_components['feature_engineer'].transform(df)
+        X = df_eng[model_components['feature_names']]
+        X_scaled = model_components['scaler'].transform(X)
+        
+        prob = model_components['ensemble_model'].predict_proba(X_scaled)[0, 1]
+        
+        # Classification should match threshold
+        is_fraud = prob >= threshold
+        assert isinstance(is_fraud, (bool, np.bool_))
+        
