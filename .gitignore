@@ -32,12 +32,6 @@ Thumbs.db
 .env
 .env.local
 
-# Models (these can be large)
-models/*.pkl
-models/*.h5
-models/*.joblib
-models/*.pt
-
 # Logs
 logs/
 *.log
