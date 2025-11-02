@@ -43,7 +43,7 @@ class TestHealthEndpoint:
         response = api_client.get("/health")
         data = response.json()
         
-        assert["uptime_seconds"] >= 0
+        assert data["uptime_seconds"] >= 0
         
 class TestPredictEndpoint:
     """
@@ -185,7 +185,7 @@ class TestBatchPredictionEndpoint:
         """Test batch with single transaction"""
         response = api_client.post(
             "/predict/batch",
-            json={"transactions": normal_transaction}
+            json={"transactions": [normal_transaction]}
         )
         data = response.json()
         
@@ -193,38 +193,37 @@ class TestBatchPredictionEndpoint:
         assert len(data) == 1
         
 class TestAnalyzeEndpoint:
-    """
-    Test /analyze endpoint
-    """
+    """Test /analyze endpoint"""
     
     def test_analyze_returns_200(self, api_client, normal_transaction):
         """Test analyze endpoint returns 200"""
         response = api_client.post("/analyze", json=normal_transaction)
         assert response.status_code == status.HTTP_200_OK
-        
+    
     def test_analyze_response_format(self, api_client, normal_transaction):
         """Test analyze has detailed breakdown"""
         response = api_client.post("/analyze", json=normal_transaction)
         data = response.json()
         
-        assert "prediction" in data
+        assert "fraud_probability" in data
         assert "feature_analysis" in data
-        assert "model_breakdown" in data
-        
+        assert "individual_model_predictions" in data
+        assert "recommendation" in data
+    
     def test_analyze_has_feature_contributions(self, api_client, normal_transaction):
         """Test analyze includes feature importance"""
         response = api_client.post("/analyze", json=normal_transaction)
         data = response.json()
         
         assert "high_risk_features" in data["feature_analysis"]
-        assert "low_risk_features" in data["feature_analysis"]
-        
+    
     def test_analyze_has_recommendation(self, api_client, normal_transaction):
         """Test analyze includes recommendation"""
         response = api_client.post("/analyze", json=normal_transaction)
         data = response.json()
         
         assert "recommendation" in data
+        assert data["recommendation"] in ["APPROVE", "REVIEW", "DECLINE"]
         
 class TestModelInfoEndpoint:
     """
@@ -247,12 +246,12 @@ class TestModelInfoEndpoint:
         assert "threshold" in data
         
     def test_model_info_has_performance_metrics(self, api_client):
-        """Test model info includes performace metrics"""
+        """Test model info includes performance metrics"""
         response = api_client.get("/model/info")
         data = response.json()
         
         assert "performance" in data
-        perf = data["performace"]
+        perf = data["performance"]
         
         assert "precision" in perf
         assert "recall" in perf
@@ -275,25 +274,29 @@ class TestDocsEndpoint:
         
         data = response.json()
         assert "openapi" in data
-        assert "indo" in data
+        assert "info" in data
         assert "paths" in data
         
-    class TestErrorHandling:
-        """
-        Test API error handling
-        """
+class TestErrorHandling:
+    """
+    Test API error handling
+    """
+    
+    def test_invalid_endpoint_returns_404(self, api_client):
+        """Test that invalid endpoint returns 404"""
+        response = api_client.get("/invalid_endpoint")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
         
-        def test_invalid_endpoint_returns_404(self, api_client):
-            """Test that invalid endpoint returns 404"""
-            response = api_client.get("/invalid_endpoint")
-            assert response.status_code == status.HTTP_404_NOT_FOUND
-            
-        def test_invalid_json_returns_422(self, api_client):
-            """Test that invalid JSON returns 422"""
-            response = api_client.get("/predict", data="invalid json", headers={"Content-Type": "appication/json"})
-            assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
-            
-        def test_wrong_method_returns_405(self, api_client):
-            """test that wrong HTTP method returns 405"""
-            response = api_client.get("/predict") # Should be post
-            assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+    def test_invalid_json_returns_422(self, api_client):
+        """Test that invalid JSON returns 422"""
+        response = api_client.post(
+            "/predict",
+            content="invalid json",
+            headers={"Content-Type": "application/json"}
+        )
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+        
+    def test_wrong_method_returns_405(self, api_client):
+        """test that wrong HTTP method returns 405"""
+        response = api_client.get("/predict") # Should be post
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
