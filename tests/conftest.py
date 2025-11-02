@@ -35,7 +35,7 @@ def normal_transaction():
     return get_normal_transaction()
 
 @pytest.fixture
-def batch_transaction():
+def batch_transactions():
     """Batch of transactions fixture"""
     from tests.fixtures.test_data import get_batch_transactions
     return get_batch_transactions(n=5)

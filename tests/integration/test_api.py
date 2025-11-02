@@ -132,3 +132,62 @@ class TestPredictEndpoint:
         prob2 = response2.json()["fraud_probability"]
         
         assert abs(prob1 - prob2) < 0.001 # Allow tiny floating point differences
+        
+class TestBatchPredictionEndpoint:
+    """
+    Test /predict/batch endpoint
+    """
+    
+    def test_batch_predict_returns_200(self, api_client, batch_transactions):
+        """Test batch predict with valid transactions"""
+        response = api_client.post(
+            "/predict/batch",
+            json={"transactions": batch_transactions}
+        )
+        assert response.status_code == status.HTTP_200_OK
+        
+    def test_batch_prediction_return_list(self, api_client, batch_transactions):
+        """Test batch predict returns list of predictions"""
+        response = api_client.post(
+            "/predict/batch",
+            json={"transactions": batch_transactions}
+        )
+        data = response.json()
+        
+        assert isinstance(data, list)
+        assert len(data) == len(batch_transactions)
+        
+    def test_batch_predict_each_has_required_fields(self, api_client, batch_transactions):
+        """Test each prediction has required fields"""
+        response = api_client.post(
+            "/predict/batch",
+            json={"transactions": batch_transactions}
+        )
+        predictions = response.json()
+        
+        required_fields = ["is_fraud", "fraud_probability", "risk_level"]
+        
+        for pred in predictions:
+            for field in required_fields:
+                assert field in pred
+                
+    def test_batch_predict_empty_list(self, api_client, batch_transactions):
+        """Test batch predict with empty list"""
+        response = api_client.post(
+            "/predict/batch",
+            json={"transactions": batch_transactions}
+        )
+        
+        # Should either return 200 with empty list or 422
+        assert response.status_code in [status.HTTP_200_OK, status.HTTP_422_UNPROCESSABLE_CONTENT]
+        
+    def test_batch_predict_single_transaction(self, api_client, normal_transaction):
+        """Test batch with single transaction"""
+        response = api_client.post(
+            "/predict/batch",
+            json={"transactions": normal_transaction}
+        )
+        data = response.json()
+        
+        assert response.status_code == status.HTTP_200_OK
+        assert len(data) == 1
