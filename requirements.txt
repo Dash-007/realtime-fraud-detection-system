@@ -1,5 +1,5 @@
 # Core ML libraries
-numpy==2.3.3
+numpy
 pandas
 scikit-learn
 xgboost
