@@ -191,3 +191,37 @@ class TestBatchPredictionEndpoint:
         
         assert response.status_code == status.HTTP_200_OK
         assert len(data) == 1
+        
+class TestAnalyzeEndpoint:
+    """
+    Test /analyze endpoint
+    """
+    
+    def test_analyze_returns_200(self, api_client, normal_transaction):
+        """Test analyze endpoint returns 200"""
+        response = api_client.post("/analyze", json=normal_transaction)
+        assert response.status_code == status.HTTP_200_OK
+        
+    def test_analyze_response_format(self, api_client, normal_transaction):
+        """Test analyze has detailed breakdown"""
+        response = api_client.post("/analyze", json=normal_transaction)
+        data = response.json()
+        
+        assert "prediction" in data
+        assert "feature_analysis" in data
+        assert "model_breakdown" in data
+        
+    def test_analyze_has_feature_contributions(self, api_client, normal_transaction):
+        """Test analyze includes feature importance"""
+        response = api_client.post("/analyze", json=normal_transaction)
+        data = response.json()
+        
+        assert "high_risk_features" in data["feature_analysis"]
+        assert "low_risk_features" in data["feature_analysis"]
+        
+    def test_analyze_has_recommendation(self, api_client, normal_transaction):
+        """Test analyze includes recommendation"""
+        response = api_client.post("/analyze", json=normal_transaction)
+        data = response.json()
+        
+        assert "recommendation" in data
