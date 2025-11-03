@@ -2,6 +2,7 @@
 Utility functions for the Streamlit dashboard
 """
 
+import os
 import sys
 from pathlib import Path
 import requests
@@ -13,8 +14,16 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from api.client import FraudDetectionClient
 
-# API Configuration
-API_URL = "http://localhost:8000"
+# Detect Hugging Face environment
+IS_HUGGING_FACE = os.getenv('SPACE_ID') is not None
+
+# Configure API URL based on environment
+if IS_HUGGING_FACE:
+    API_URL = "http://localhost:8000" # Internal API in Docker
+    print("Running on Hugging Face - using local API")
+else:
+    API_URL = "http://localhost:8000" # Local development
+    print("Running locally")
 
 def get_api_client() -> FraudDetectionClient:
     """
