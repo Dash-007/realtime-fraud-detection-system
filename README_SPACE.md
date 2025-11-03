@@ -22,7 +22,7 @@ license: mit
 ## ⚡ Quick API Test
 ```bash
 # Test the live API
-curl -X POST "https://YOUR-SPACE.hf.space/api/predict" \
+curl -X POST "https://Dash-007.hf.space/api/predict" \
   -H "Content-Type: application/json" \
   -d '{
     "Time": 0.0,
@@ -106,7 +106,7 @@ This Space runs a complete production system:
 ## 💻 Local Development
 ```bash
 # Clone repository
-git clone https://github.com/YOUR_USERNAME/realtime-fraud-detection-system
+git clone https://github.com/Dash-007/realtime-fraud-detection-system
 
 # Build and run
 docker-compose up --build
@@ -118,7 +118,7 @@ docker-compose up --build
 
 ## 📖 Documentation
 
-- **GitHub**: [Full Documentation](https://github.com/YOUR_USERNAME/realtime-fraud-detection-system)
+- **GitHub**: [Full Documentation](https://github.com/Dash-007/realtime-fraud-detection-system)
 - **API Docs**: [/docs](/docs)
 - **Model Details**: See repository README
 
