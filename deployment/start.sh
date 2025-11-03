@@ -1,7 +1,7 @@
 #!/bin/bash
 # Startup script for Hugging Face Space
 
-start -e
+set -e
 
 echo "Starting Fraud Detection System..."
 echo "=================================="
