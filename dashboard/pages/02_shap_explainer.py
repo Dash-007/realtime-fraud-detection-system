@@ -196,7 +196,6 @@ if st.button("Explain Prediction", type="primary", width="stretch"):
             X_scaled = components['scaler'].transform(X_prepared)
             
             # Get prediction
-            result = components['model'].predict(X_scaled)
             pred_proba = components['model'].predict_proba(X_scaled)[0, 1]
             
             # Calculate SHAP values using individual model
@@ -246,7 +245,7 @@ if st.button("Explain Prediction", type="primary", width="stretch"):
                 st.metric("Fraud Probability", format_probability(pred_proba), help="Full ensemble prediction")
                 
             with col2:
-                classification = "FRAUD" if result[0] == 1 else "LEGITIMATE"
+                classification = "FRAUD" if round(pred_proba, 3) >= 0.704 else "LEGITIMATE"
                 st.metric("Classification", classification)
                 
             with col3:
