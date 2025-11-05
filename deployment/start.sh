@@ -1,22 +1,24 @@
 #!/bin/bash
-# Startup script for Hugging Face Space
-
 set -e
 
 echo "Starting Fraud Detection System..."
-echo "=================================="
 
-# Wait for the model to be available
-if [ ! -f "/app/models/production_model_ensemble.pkl" ]; then
-    echo "Model file not found!"
-    echo "Checking alternative locations..."
-    find /app -name "*.pkl" -type f
+export HOME=/app
+export STREAMLIT_SERVER_HEADLESS=true
+
+python3 -c "import fastapi, streamlit, sklearn, xgboost; print('Imports OK')"
+
+if [ -f "/app/models/production_model_ensemble.pkl" ]; then
+    echo "Model found"
 fi
 
-# Test python imports
-echo "Testing Python environment..."
-python -c "import fastapi; import streamlit; import sklearn; import xgboost; print('All imports successful')"
+# Start API in background
+uvicorn api.main:app --host 0.0.0.0 --port 8000 &
+sleep 5
 
-# Start supervisor (manage all services)
-echo "Starting services with supervisor..."
-exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+# Start Streamlit on port 7860 (foreground)
+exec streamlit run dashboard/app.py \
+    --server.port 7860 \
+    --server.address 0.0.0.0 \
+    --server.headless true \
+    --browser.gatherUsageStats false

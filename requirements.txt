@@ -21,12 +21,6 @@ ipykernel
 black
 pytest
 
-# Data validation
-great-expectations
-
-# Experiment tracking (optional but impressive)
-mlflow
-
 # Dashboard and visualization
 streamlit
 shap
@@ -41,7 +35,6 @@ pytest-mock
 pytest-asyncio
 httpx
 
-# For later - commented out for now
-# fastapi
-# uvicorn
-# boto3
+# Deployment
+fastapi
+uvicorn
