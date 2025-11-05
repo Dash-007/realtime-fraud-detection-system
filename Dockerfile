@@ -1,7 +1,4 @@
-# Multi-stage build for smaller image size
-
-# Stage 1: Base image with Python
-FROM python:3.11-slim AS base
+FROM python:3.9-slim AS base
 
 # Set working directory
 WORKDIR /app
@@ -12,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Stage 2: Build stage - install dependencies
+# Install dependencies
 FROM base AS builder
 
 # Copy requirements files
@@ -20,7 +17,6 @@ COPY requirements.txt .
 COPY api/requirements.txt ./api/
 
 # Install Python dependencies
-# Note: Installing from both requirements files
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir -r api/requirements.txt
@@ -29,8 +25,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 FROM base AS runtime
 
 # Copy installed packages from builder
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder /usr/local /usr/local
 
 # Copy application code
 COPY api/ /app/api/
@@ -47,7 +42,7 @@ USER appuser
 EXPOSE 8000
 
 # Health check - simple TCP connection test
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD python -c "import socket; socket.create_connection(('localhost', 8000), timeout=2)" || exit 1
 
 # Run the application

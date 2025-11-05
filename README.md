@@ -78,12 +78,13 @@ fraud-detection-system/
 - [x] Data exploration and EDA
 - [x] Feature engineering pipeline
 - [x] Baseline model development
-- [ ] Advanced model ensemble
-- [ ] Real-time streaming pipeline
-- [ ] API development
-- [ ] Docker containerization
-- [ ] AWS deployment
-- [ ] Monitoring dashboard
+- [x] Advanced model ensemble
+- [x] Real-time streaming pipeline
+- [x] API development
+- [x] Docker containerization
+- [x] Hugging Face Spaces deployment
+- [x] Monitoring dashboard
+- [ ] Real-Time Streaming with Kafka
 
 ## 📝 Documentation
 

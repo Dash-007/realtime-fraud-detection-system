@@ -15,7 +15,16 @@ jobs:
         python-version: ['3.9', '3.11']
     
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout (with LFS)
+      uses: actions/checkout@v4
+      with:
+        lfs: true
+        fetch-depth: 0
+
+    - name: Ensure Git LFS files are present
+      run: |
+        git lfs install --local
+        git lfs pull
     
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
@@ -23,10 +32,10 @@ jobs:
         python-version: ${{ matrix.python-version }}
     
     - name: Cache pip packages
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
     
@@ -45,7 +54,7 @@ jobs:
         pytest tests/integration/ -v --cov=api --cov-report=xml --cov-report=term
     
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         files: ./coverage.xml
         flags: unittests
@@ -56,10 +65,14 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout (with LFS)
+      uses: actions/checkout@v4
+      with:
+        lfs: true
+        fetch-depth: 0
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
     
@@ -88,10 +101,19 @@ jobs:
     needs: test
     
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout (with LFS)
+      uses: actions/checkout@v4
+      with:
+        lfs: true
+        fetch-depth: 0
+
+    - name: Ensure Git LFS files are present
+      run: |
+        git lfs install --local
+        git lfs pull
     
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
     
     - name: Test Docker build
       run: |
@@ -100,6 +122,10 @@ jobs:
     - name: Test Docker run
       run: |
         docker compose up -d
-        sleep 15
+        sleep 20
         curl -f http://localhost:8000/health || exit 1
         docker compose down
+
+    - name: Tear down container
+      if: always()
+      run: docker compose down --volumes --remove-orphans
