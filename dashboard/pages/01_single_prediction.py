@@ -112,15 +112,17 @@ with st.expander("All PCA Features (V1-V28)", expanded=False):
     feature_values = {}
     for i in range(1, 29):
         col_idx = (i - 1) % 4
+        feature_name = f'V{i}'
+        
         with cols[col_idx]:
-            # Skip the ones we already have inputs for
             if i in [10, 14, 16, 17]:
-                feature_values[f'V{i}'] = locals()[f'v{i}']
+                feature_values[feature_name] = locals()[f'v{i}']
             else:
-                feature_values[f'V{i}'] = st.number_input(
-                    f"V{i}",
-                    value=float(st.session_state.transaction[f'V{i}']),
-                    key=f'v{i}_input'
+                # Use session state value directly
+                feature_values[feature_name] = st.number_input(
+                    feature_name,
+                    value=float(st.session_state.transaction[feature_name]),
+                    format="%.6f"
                 )
 
 # Update transaction dict
@@ -249,7 +251,7 @@ if predict_button:
             # Interpretation
             st.markdown("###  Interpretation")
             
-            if result.fraud_probability > result.threshold_used:
+            if result.fraud_probability >= result.threshold_used:
                 st.warning(f"""
                 **Action Required:** This transaction exceeds the fraud threshold of {result.threshold_used:.1%}.
                 

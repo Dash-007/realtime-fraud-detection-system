@@ -67,7 +67,23 @@ def load_model_and_explainer(explain_option):
             elif "XGBoost" in explain_option and 'xgb' in individual_models:
                 model_to_explain = individual_models['xgb']
                 model_name = "XGBoost"
-                explainer = shap.TreeExplainer(model_to_explain)
+                
+                # For XGBoost SHAP compatibility
+                try:
+                    booster = model_to_explain.get_booster()
+                    booster.set_param({'base_score': '0.5'})
+                    explainer = shap.TreeExplainer(model_to_explain)
+                except Exception as e:
+                    # Fallback: create dummy background for KernelExplainer
+                    st.warning(f"Using slower SHAP method for XGBoost: {str(e)}")
+                    
+                    def predict_fn(X):
+                        return model_to_explain.predict_proba(X)[:, 1]
+                    
+                    # Create simple background (neutral values)
+                    n_features = len(feature_names)
+                    background = np.zeros((10, n_features))
+                    explainer = shap.KernelExplainer(predict_fn, background)
                 
             elif "Full Ensemble" in explain_option:
                 model_to_explain = ensemble_model
@@ -180,6 +196,7 @@ if st.button("Explain Prediction", type="primary", width="stretch"):
             X_scaled = components['scaler'].transform(X_prepared)
             
             # Get prediction
+            result = components['model'].predict(X_scaled)
             pred_proba = components['model'].predict_proba(X_scaled)[0, 1]
             
             # Calculate SHAP values using individual model
@@ -229,7 +246,7 @@ if st.button("Explain Prediction", type="primary", width="stretch"):
                 st.metric("Fraud Probability", format_probability(pred_proba), help="Full ensemble prediction")
                 
             with col2:
-                classification = "FRAUD" if pred_proba > 0.704 else "LEGITIMATE"
+                classification = "FRAUD" if result[0] == 1 else "LEGITIMATE"
                 st.metric("Classification", classification)
                 
             with col3:

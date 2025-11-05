@@ -136,12 +136,12 @@ if __name__ == "__main__":
         # Get basic info
         info = loader.get_basic_info(df)
         
-        print("\n📊 Dataset Information:")
-        print("-" * 30)
+        print("\nDataset Information:")
+        print("-" * 50)
         for key, value in info.items():
             print(f"{key:20s}: {value}")
         
-        print("\n✅ Data loader working correctly!")
+        print("\nData loader working correctly!")
         
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
