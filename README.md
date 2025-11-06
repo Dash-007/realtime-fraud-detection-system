@@ -566,40 +566,6 @@ Complete transaction processing flow:
 **Access**: `http://localhost:8501` (local deployment)
  
 ---
-
-## 🔍 Model Interpretability
- 
-### SHAP (SHapley Additive exPlanations)
- 
-**Access**: Dashboard → "SHAP Explainer" page
- 
-**Capabilities**:
-- **Waterfall Plots**: Show how each feature contributes to a single prediction
-- **Force Plots**: Visualize features pushing the prediction toward fraud or legitimate
-- **Summary Plots**: Global feature importance across all predictions
-- **Dependence Plots**: Relationship between feature values and SHAP values
- 
-**Example SHAP Interpretation**:
-```
-Transaction with fraud_probability = 0.92 (HIGH RISK)
- 
-Top Contributing Features:
-  V14: -3.5 → +0.35 (strongly pushes toward fraud)
-  V10: -2.8 → +0.28 (pushes toward fraud)
-  Amount_log: 5.2 → +0.15 (pushes toward fraud)
-  V12: -1.2 → +0.08 (pushes toward fraud)
- 
-Recommendation: BLOCK - Manual review required
-```
- 
-**Top Fraud Indicators** (V1-V28 PCA features):
-1. **V14** - Negative values strongly indicate fraud
-2. **V10** - Negative values indicate fraud
-3. **V17** - Negative values indicate fraud
-4. **V12** - Negative values indicate fraud
-5. **Amount_log** - Higher amounts more suspicious in certain contexts
- 
----
    
 ## 🐳 Deployment Options
  
