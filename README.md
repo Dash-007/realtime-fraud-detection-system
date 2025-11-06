@@ -68,6 +68,46 @@ A complete end-to-end ML system demonstrating advanced techniques for handling e
 - **50+ Tests**: Comprehensive test coverage
  
 ---
+
+## 🛠️ Technology Stack
+ 
+### Machine Learning & Data Science
+- **Scikit-learn** - Model training, ensemble methods, evaluation
+- **XGBoost** - Gradient boosting for high performance
+- **Imbalanced-learn (SMOTE)** - Handling 577:1 class imbalance
+- **SHAP** - Model explainability and interpretability
+- **Pandas & NumPy** - Data manipulation and numerical computing
+- **Joblib** - Model serialization and deployment
+ 
+### Backend & API
+- **FastAPI** - High-performance REST API with async support
+- **Pydantic** - Data validation and settings management
+- **Uvicorn** - ASGI server for production deployment
+ 
+### Frontend & Visualization
+- **Streamlit** - Interactive web dashboard
+- **Plotly** - Interactive visualizations
+- **Matplotlib & Seaborn** - Statistical plotting
+ 
+### MLOps & Deployment
+- **Docker** - Containerization with multi-stage builds
+- **Docker Compose** - Service orchestration
+ 
+### Testing & Quality
+- **Pytest** - Unit and integration testing framework
+- **pytest-asyncio** - Async testing support
+- **pytest-cov** - Code coverage reporting
+- **pytest-mock** - Mocking for isolated tests
+- **HTTPX** - API testing client
+ 
+### Configuration & Utilities
+- **PyYAML** - Configuration management
+- **python-dotenv** - Environment variable handling
+- **Structured Logging** - JSON logging for production
+- **tqdm** - Progress tracking
+ 
+---
+ 
  
 ## 🏗️ System Architecture
  
@@ -203,6 +243,132 @@ realtime-fraud-detection-system/
 └── 📋 Documentation
     ├── README.md                        # This file
     └── requirements.txt                 # Python dependencies
+```
+ 
+---
+
+## 🚀 Getting Started
+ 
+### Prerequisites
+ 
+- Python 3.11+ (3.9+ supported)
+- Docker & Docker Compose (optional, for containerized deployment)
+- 4GB+ RAM recommended
+ 
+### Local Installation
+ 
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Dash-007/realtime-fraud-detection-system.git
+   cd realtime-fraud-detection-system
+   ```
+ 
+2. **Create virtual environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+ 
+3. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   pip install -r api/requirements.txt
+   ```
+ 
+4. **Download dataset**
+   - Visit [Kaggle Credit Card Fraud Dataset](https://www.kaggle.com/mlg-ulb/creditcardfraud)
+   - Download `creditcard.csv` and place in `data/` directory
+ 
+5. **Train the model** (or use pre-trained model)
+   ```bash
+   jupyter notebook notebooks/03_advanced_modeling.ipynb
+   # Run all cells to train and save the ensemble model
+   ```
+ 
+### Running Locally
+ 
+**Option 1: API + Dashboard Separately**
+ 
+```bash
+# Terminal 1 - Start API
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+ 
+# Terminal 2 - Start Dashboard
+streamlit run dashboard/app.py
+```
+ 
+**Access**:
+- API: http://localhost:8000
+- Dashboard: http://localhost:8501
+- API Docs: http://localhost:8000/docs
+ 
+**Option 2: Docker Compose (Recommended)**
+ 
+```bash
+docker-compose up --build
+```
+ 
+**Access**:
+- API: http://localhost:8000
+- Dashboard: Run separately with `streamlit run dashboard/app.py`
+ 
+### Quick API Test
+ 
+```bash
+# Health check
+curl http://localhost:8000/health
+ 
+# Make a prediction
+curl -X POST "http://localhost:8000/predict" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Time": 0.0,
+    "Amount": 149.62,
+    "V1": -1.3598, "V2": -0.0727, "V3": 2.5363,
+    "V4": 1.3781, "V5": -0.3383, "V6": 0.4624,
+    "V7": 0.2396, "V8": 0.0987, "V9": 0.3638,
+    "V10": 0.0907, "V11": -0.5516, "V12": -0.6178,
+    "V13": -0.9914, "V14": -0.3111, "V15": 1.4681,
+    "V16": -0.4704, "V17": 0.2080, "V18": 0.0258,
+    "V19": 0.4039, "V20": 0.2514, "V21": -0.0183,
+    "V22": 0.2778, "V23": -0.1104, "V24": 0.0669,
+    "V25": 0.1286, "V26": -0.1891, "V27": 0.1333,
+    "V28": -0.0211
+  }'
+```
+ 
+---
+ 
+## 💻 Usage Examples
+ 
+### Python SDK
+ 
+```python
+from api.client import FraudDetectionClient
+ 
+# Initialize client
+with FraudDetectionClient("http://localhost:8000") as client:
+    # Health check
+    health = client.health_check()
+    print(f"API Status: {health['status']}")
+ 
+    # Single prediction
+    transaction = {
+        "Time": 0.0,
+        "Amount": 149.62,
+        "V1": -1.3598, "V2": -0.0727,
+        # ... (V3-V28)
+    }
+    result = client.predict(transaction)
+    print(f"Fraud Probability: {result.fraud_probability:.2%}")
+    print(f"Risk Level: {result.risk_level}")
+    print(f"Decision: {'FRAUD' if result.is_fraud else 'LEGITIMATE'}")
+ 
+    # Batch prediction
+    transactions = [transaction1, transaction2, transaction3]
+    results = client.predict_batch(transactions)
+    for i, pred in enumerate(results):
+        print(f"Transaction {i+1}: {pred.risk_level} risk")
 ```
  
 ---
@@ -359,133 +525,7 @@ Complete transaction processing flow:
 ```
  
 ---
- 
-## 🚀 Getting Started
- 
-### Prerequisites
- 
-- Python 3.11+ (3.9+ supported)
-- Docker & Docker Compose (optional, for containerized deployment)
-- 4GB+ RAM recommended
- 
-### Local Installation
- 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Dash-007/realtime-fraud-detection-system.git
-   cd realtime-fraud-detection-system
-   ```
- 
-2. **Create virtual environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
- 
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   pip install -r api/requirements.txt
-   ```
- 
-4. **Download dataset**
-   - Visit [Kaggle Credit Card Fraud Dataset](https://www.kaggle.com/mlg-ulb/creditcardfraud)
-   - Download `creditcard.csv` and place in `data/` directory
- 
-5. **Train the model** (or use pre-trained model)
-   ```bash
-   jupyter notebook notebooks/03_advanced_modeling.ipynb
-   # Run all cells to train and save the ensemble model
-   ```
- 
-### Running Locally
- 
-**Option 1: API + Dashboard Separately**
- 
-```bash
-# Terminal 1 - Start API
-uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
- 
-# Terminal 2 - Start Dashboard
-streamlit run dashboard/app.py
-```
- 
-**Access**:
-- API: http://localhost:8000
-- Dashboard: http://localhost:8501
-- API Docs: http://localhost:8000/docs
- 
-**Option 2: Docker Compose (Recommended)**
- 
-```bash
-docker-compose up --build
-```
- 
-**Access**:
-- API: http://localhost:8000
-- Dashboard: Run separately with `streamlit run dashboard/app.py`
- 
-### Quick API Test
- 
-```bash
-# Health check
-curl http://localhost:8000/health
- 
-# Make a prediction
-curl -X POST "http://localhost:8000/predict" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "Time": 0.0,
-    "Amount": 149.62,
-    "V1": -1.3598, "V2": -0.0727, "V3": 2.5363,
-    "V4": 1.3781, "V5": -0.3383, "V6": 0.4624,
-    "V7": 0.2396, "V8": 0.0987, "V9": 0.3638,
-    "V10": 0.0907, "V11": -0.5516, "V12": -0.6178,
-    "V13": -0.9914, "V14": -0.3111, "V15": 1.4681,
-    "V16": -0.4704, "V17": 0.2080, "V18": 0.0258,
-    "V19": 0.4039, "V20": 0.2514, "V21": -0.0183,
-    "V22": 0.2778, "V23": -0.1104, "V24": 0.0669,
-    "V25": 0.1286, "V26": -0.1891, "V27": 0.1333,
-    "V28": -0.0211
-  }'
-```
- 
----
- 
-## 💻 Usage Examples
- 
-### Python SDK
- 
-```python
-from api.client import FraudDetectionClient
- 
-# Initialize client
-with FraudDetectionClient("http://localhost:8000") as client:
-    # Health check
-    health = client.health_check()
-    print(f"API Status: {health['status']}")
- 
-    # Single prediction
-    transaction = {
-        "Time": 0.0,
-        "Amount": 149.62,
-        "V1": -1.3598, "V2": -0.0727,
-        # ... (V3-V28)
-    }
-    result = client.predict(transaction)
-    print(f"Fraud Probability: {result.fraud_probability:.2%}")
-    print(f"Risk Level: {result.risk_level}")
-    print(f"Decision: {'FRAUD' if result.is_fraud else 'LEGITIMATE'}")
- 
-    # Batch prediction
-    transactions = [transaction1, transaction2, transaction3]
-    results = client.predict_batch(transactions)
-    for i, pred in enumerate(results):
-        print(f"Transaction {i+1}: {pred.risk_level} risk")
-```
- 
----
- 
+
 ## 📊 Dashboard Features
  
 ### 1. Single Prediction (`01_single_prediction.py`)
@@ -526,7 +566,41 @@ with FraudDetectionClient("http://localhost:8000") as client:
 **Access**: `http://localhost:8501` (local deployment)
  
 ---
+
+## 🔍 Model Interpretability
  
+### SHAP (SHapley Additive exPlanations)
+ 
+**Access**: Dashboard → "SHAP Explainer" page
+ 
+**Capabilities**:
+- **Waterfall Plots**: Show how each feature contributes to a single prediction
+- **Force Plots**: Visualize features pushing the prediction toward fraud or legitimate
+- **Summary Plots**: Global feature importance across all predictions
+- **Dependence Plots**: Relationship between feature values and SHAP values
+ 
+**Example SHAP Interpretation**:
+```
+Transaction with fraud_probability = 0.92 (HIGH RISK)
+ 
+Top Contributing Features:
+  V14: -3.5 → +0.35 (strongly pushes toward fraud)
+  V10: -2.8 → +0.28 (pushes toward fraud)
+  Amount_log: 5.2 → +0.15 (pushes toward fraud)
+  V12: -1.2 → +0.08 (pushes toward fraud)
+ 
+Recommendation: BLOCK - Manual review required
+```
+ 
+**Top Fraud Indicators** (V1-V28 PCA features):
+1. **V14** - Negative values strongly indicate fraud
+2. **V10** - Negative values indicate fraud
+3. **V17** - Negative values indicate fraud
+4. **V12** - Negative values indicate fraud
+5. **Amount_log** - Higher amounts more suspicious in certain contexts
+ 
+---
+   
 ## 🐳 Deployment Options
  
 ### 1. Local Development
@@ -577,45 +651,6 @@ docker-compose up --build
  
 ---
  
-## 🛠️ Technology Stack
- 
-### Machine Learning & Data Science
-- **Scikit-learn** - Model training, ensemble methods, evaluation
-- **XGBoost** - Gradient boosting for high performance
-- **Imbalanced-learn (SMOTE)** - Handling 577:1 class imbalance
-- **SHAP** - Model explainability and interpretability
-- **Pandas & NumPy** - Data manipulation and numerical computing
-- **Joblib** - Model serialization and deployment
- 
-### Backend & API
-- **FastAPI** - High-performance REST API with async support
-- **Pydantic** - Data validation and settings management
-- **Uvicorn** - ASGI server for production deployment
- 
-### Frontend & Visualization
-- **Streamlit** - Interactive web dashboard
-- **Plotly** - Interactive visualizations
-- **Matplotlib & Seaborn** - Statistical plotting
- 
-### MLOps & Deployment
-- **Docker** - Containerization with multi-stage builds
-- **Docker Compose** - Service orchestration
- 
-### Testing & Quality
-- **Pytest** - Unit and integration testing framework
-- **pytest-asyncio** - Async testing support
-- **pytest-cov** - Code coverage reporting
-- **pytest-mock** - Mocking for isolated tests
-- **HTTPX** - API testing client
- 
-### Configuration & Utilities
-- **PyYAML** - Configuration management
-- **python-dotenv** - Environment variable handling
-- **Structured Logging** - JSON logging for production
-- **tqdm** - Progress tracking
- 
----
- 
 ## 🧪 Testing
  
 ### Test Coverage
@@ -638,40 +673,6 @@ pytest tests/integration/ -v   # Integration tests
  
 - **Pydantic** schema validation for API requests
 - **Input range validation** for Amount ≥ 0
- 
----
- 
-## 🔍 Model Interpretability
- 
-### SHAP (SHapley Additive exPlanations)
- 
-**Access**: Dashboard → "SHAP Explainer" page
- 
-**Capabilities**:
-- **Waterfall Plots**: Show how each feature contributes to a single prediction
-- **Force Plots**: Visualize features pushing the prediction toward fraud or legitimate
-- **Summary Plots**: Global feature importance across all predictions
-- **Dependence Plots**: Relationship between feature values and SHAP values
- 
-**Example SHAP Interpretation**:
-```
-Transaction with fraud_probability = 0.92 (HIGH RISK)
- 
-Top Contributing Features:
-  V14: -3.5 → +0.35 (strongly pushes toward fraud)
-  V10: -2.8 → +0.28 (pushes toward fraud)
-  Amount_log: 5.2 → +0.15 (pushes toward fraud)
-  V12: -1.2 → +0.08 (pushes toward fraud)
- 
-Recommendation: BLOCK - Manual review required
-```
- 
-**Top Fraud Indicators** (V1-V28 PCA features):
-1. **V14** - Negative values strongly indicate fraud
-2. **V10** - Negative values indicate fraud
-3. **V17** - Negative values indicate fraud
-4. **V12** - Negative values indicate fraud
-5. **Amount_log** - Higher amounts more suspicious in certain contexts
  
 ---
  
@@ -769,21 +770,7 @@ This project demonstrates proficiency in:
 - **Production Ready**: Complete system ready for deployment
  
 ---
- 
-## 🚀 API Endpoints Summary
- 
-| Endpoint | Method | Description | Response Time |
-|----------|--------|-------------|---------------|
-| `/` | GET | Welcome message and API info | <5ms |
-| `/health` | GET | Health check and model status | <10ms |
-| `/predict` | POST | Single transaction prediction | <40ms |
-| `/predict/batch` | POST | Batch prediction (up to 100) | <1000ms |
-| `/analyze` | POST | Detailed analysis with SHAP | <100ms |
-| `/model/info` | GET | Model metadata and performance | <5ms |
-| `/docs` | GET | Interactive API documentation | <10ms |
- 
----
- 
+  
 ## 📈 Model Training Process
  
 The complete ML pipeline includes:
@@ -810,6 +797,20 @@ The complete ML pipeline includes:
 - Threshold optimization (0.704)
 - SHAP explainability integration
 - Model serialization and metadata
+ 
+---
+
+## 🚀 API Endpoints Summary
+ 
+| Endpoint | Method | Description | Response Time |
+|----------|--------|-------------|---------------|
+| `/` | GET | Welcome message and API info | <5ms |
+| `/health` | GET | Health check and model status | <10ms |
+| `/predict` | POST | Single transaction prediction | <40ms |
+| `/predict/batch` | POST | Batch prediction (up to 100) | <1000ms |
+| `/analyze` | POST | Detailed analysis with SHAP | <100ms |
+| `/model/info` | GET | Model metadata and performance | <5ms |
+| `/docs` | GET | Interactive API documentation | <10ms |
  
 ---
  
