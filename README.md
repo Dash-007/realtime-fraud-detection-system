@@ -190,15 +190,12 @@ realtime-fraud-detection-system/
 │   └── conftest.py                      # Pytest configuration
 │
 ├── 🐳 deployment/                        # Production configs
-│   ├── nginx.conf                       # Reverse proxy
-│   ├── supervisord.conf                 # Process manager
 │   └── start.sh                         # Startup script
 │
 ├── 📦 Docker files
 │   ├── Dockerfile                       # Standard deployment
 │   ├── Dockerfile.hf                    # Hugging Face Space
 │   ├── docker-compose.yml               # Local development
-│   └── docker-compose.hf.yml            # HF deployment
 │
 ├── data/                                 # Data directory (not in git)
 │   └── creditcard.csv                   # Credit card fraud dataset
@@ -263,27 +260,8 @@ Transforms **30 raw features → 40 engineered features**
 #### Ensemble Composition
  
 **Model 1: Random Forest**
-```python
-RandomForestClassifier(
-    n_estimators=100,
-    max_depth=10,
-    min_samples_split=20,
-    min_samples_leaf=10,
-    class_weight="balanced",
-    random_state=42
-)
-```
  
 **Model 2: XGBoost**
-```python
-XGBClassifier(
-    n_estimators=100,
-    max_depth=6,
-    learning_rate=0.01,
-    scale_pos_weight=577,  # Addresses 577:1 imbalance
-    random_state=42
-)
-```
  
 **Ensemble Method**: `VotingClassifier` with soft voting (averages probabilities from both models)
  
@@ -506,106 +484,6 @@ with FraudDetectionClient("http://localhost:8000") as client:
         print(f"Transaction {i+1}: {pred.risk_level} risk")
 ```
  
-### API Endpoints
- 
-#### `POST /predict` - Single Transaction Prediction
- 
-**Request**:
-```json
-{
-  "Time": 0.0,
-  "Amount": 149.62,
-  "V1": -1.3598, "V2": -0.0727,
-  // ... V3-V28
-}
-```
- 
-**Response**:
-```json
-{
-  "is_fraud": false,
-  "fraud_probability": 0.0234,
-  "risk_level": "LOW",
-  "threshold_used": 0.704,
-  "model_version": "ensemble_v1",
-  "prediction_id": "550e8400-e29b-41d4-a716-446655440000",
-  "timestamp": "2025-11-04T12:30:45.123Z"
-}
-```
- 
-**Risk Levels**:
-- `HIGH` (>0.8): Block transaction, manual review required
-- `MEDIUM` (>0.5): Additional verification needed
-- `LOW` (≤0.5): Approve transaction
- 
-#### `POST /predict/batch` - Batch Predictions
- 
-Process up to 100 transactions in a single request.
- 
-**Request**:
-```json
-{
-  "transactions": [
-    { "Time": 0.0, "Amount": 100.0, "V1": 0.144, ... },
-    { "Time": 1.0, "Amount": 250.0, "V1": -0.822, ... }
-  ]
-}
-```
- 
-**Response**: Array of prediction objects
- 
-#### `POST /analyze` - Detailed Analysis with SHAP
- 
-Get detailed feature analysis and individual model predictions.
- 
-**Response**:
-```json
-{
-  "fraud_probability": 0.0234,
-  "individual_model_predictions": {
-    "rf": 0.0156,
-    "xgb": 0.0312
-  },
-  "feature_analysis": {
-    "amount": 149.62,
-    "amount_percentile": 62.5,
-    "high_risk_features": ["V14", "V10"]
-  },
-  "recommendation": "APPROVE"
-}
-```
- 
-#### `GET /health` - Health Check
- 
-**Response**:
-```json
-{
-  "status": "healthy",
-  "model_loaded": true,
-  "model_version": "ensemble_v1",
-  "uptime_seconds": 3600
-}
-```
- 
-#### `GET /model/info` - Model Metadata
- 
-**Response**:
-```json
-{
-  "model_version": "ensemble_v1",
-  "model_type": "Ensemble (RandomForest + XGBoost)",
-  "threshold": 0.704,
-  "features_count": 40,
-  "feature_names": ["Time", "Amount", "V1", "..."],
-  "performance": {
-    "precision": 0.919,
-    "recall": 0.806,
-    "f1_score": 0.859,
-    "false_alarm_ratio": 0.089
-  }
-}
-```
- 
 ---
  
 ## 📊 Dashboard Features
@@ -681,7 +559,7 @@ docker run -p 8000:8000 fraud-detection-api
 - Health checks every 30s
 - Read-only model volume mounting
  
-### 3. Docker Compose (Multi-Service)
+### 3. Docker Compose
  
 ```bash
 # Development environment
@@ -692,32 +570,10 @@ docker-compose up --build
 - `fraud-api`: FastAPI backend on port 8000
 - Network: `fraud-detection-network`
 - Volume: `./models:/app/models:ro` (read-only)
- 
-### 4. Hugging Face Spaces (Production)
- 
-Full-stack deployment with unified interface:
- 
-```bash
-# Use Hugging Face-specific Docker Compose
-docker-compose -f docker-compose.hf.yml up --build
-```
- 
+  
 **Architecture**:
-- **Nginx** (port 7860): Reverse proxy and routing
-- **FastAPI** (port 8000): Backend API
-- **Streamlit** (port 8501): Frontend dashboard
-- **Supervisor**: Process management and auto-restart
- 
-**Nginx Routing**:
-- `/` → Streamlit dashboard
-- `/api/` → FastAPI backend
-- `/docs` → API documentation
-- `/health` → Health check endpoint
- 
-**Process Management** (supervisord):
-- Monitors all 3 services
-- Auto-restarts on failure
-- Centralized logging
+- **FastAPI**: Backend API
+- **Streamlit**: Frontend dashboard
  
 ---
  
@@ -744,9 +600,6 @@ docker-compose -f docker-compose.hf.yml up --build
 ### MLOps & Deployment
 - **Docker** - Containerization with multi-stage builds
 - **Docker Compose** - Service orchestration
-- **Nginx** - Reverse proxy for production
-- **Supervisor** - Process management
-- **Great Expectations** - Data validation
  
 ### Testing & Quality
 - **Pytest** - Unit and integration testing framework
@@ -779,25 +632,10 @@ pytest tests/unit/ -v          # Unit tests
 pytest tests/integration/ -v   # Integration tests
 ```
  
-### Test Structure
- 
-```
-tests/
-├── unit/
-│   ├── test_features.py      # Feature engineering (11 tests)
-│   └── test_model.py          # Model predictions (9 tests)
-├── integration/
-│   └── test_api.py            # API endpoints (31 tests)
-├── fixtures/
-│   └── test_data.py           # Reusable test data
-└── conftest.py                # Pytest configuration
-```
- 
 **Test Results**: **50 tests passed, 1 skipped** ✅
  
 ### Data Validation
  
-- **Great Expectations** for data quality checks
 - **Pydantic** schema validation for API requests
 - **Input range validation** for Amount ≥ 0
  
@@ -867,7 +705,6 @@ Recommendation: BLOCK - Manual review required
 - Graceful degradation on errors
 - Health checks with retries
 - Docker restart policies
-- Automatic service recovery (Supervisor in HF deployment)
  
 ---
  
@@ -905,7 +742,7 @@ This project demonstrates proficiency in:
 - **API Development**: FastAPI with async endpoints, Pydantic validation
 - **Containerization**: Docker multi-stage builds, Docker Compose orchestration
 - **Model Serving**: Joblib serialization, sub-40ms inference
-- **Production Deployment**: Hugging Face Spaces with Nginx and Supervisor
+- **Production Deployment**: Hugging Face Spaces
 - **Monitoring**: Health checks, structured logging, error tracking
  
 ### Software Engineering
@@ -923,8 +760,6 @@ This project demonstrates proficiency in:
  
 ### DevOps
 - **Docker**: Multi-stage builds, Docker Compose
-- **Process Management**: Supervisor for production
-- **Reverse Proxy**: Nginx configuration
 - **CI/CD Ready**: GitHub Actions workflow structure
  
 ### Full-Stack ML
@@ -984,7 +819,7 @@ The complete ML pipeline includes:
  
 - 🔗 LinkedIn: [dakshina-perera](https://linkedin.com/in/dakshina-perera)
 - 💻 GitHub: [@Dash-007](https://github.com/Dash-007)
-- 📧 Email: dashperera007@gmail.com
+- 📧 Email: Personal: dashperera007@gmail.com | Official: dashperera365@gmail.com
 - 🌐 Portfolio: [View Projects](https://github.com/Dash-007)
  
 ---
