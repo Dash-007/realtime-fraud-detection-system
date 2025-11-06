@@ -113,12 +113,12 @@ A complete end-to-end ML system demonstrating advanced techniques for handling e
  
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Client Layer                              │
+│                        Client Layer                             │
 │  ┌──────────────────┐              ┌──────────────────┐         │
 │  │  Web Dashboard   │              │  API Clients     │         │
 │  │  (Streamlit)     │              │  (REST/Python)   │         │
 │  └────────┬─────────┘              └────────┬─────────┘         │
-└───────────┼────────────────────────────────┼──────────────────┘
+└───────────┼─────────────────────────────────┼───────────────────┘
             │                                 │
             └────────────┬────────────────────┘
                          │
@@ -130,7 +130,7 @@ A complete end-to-end ML system demonstrating advanced techniques for handling e
             │  │  - Request ID       │  │
             │  │  - Error Handling   │  │
             │  └──────────┬──────────┘  │
-            │             │              │
+            │             │             │
             │  ┌──────────▼──────────┐  │
             │  │  API Endpoints      │  │
             │  │  - /predict         │  │
@@ -139,7 +139,7 @@ A complete end-to-end ML system demonstrating advanced techniques for handling e
             │  │  - /health          │  │
             │  │  - /model/info      │  │
             │  └──────────┬──────────┘  │
-            └─────────────┼──────────────┘
+            └─────────────┼─────────────┘
                           │
             ┌─────────────▼──────────────┐
             │   ML Pipeline Layer        │
@@ -150,19 +150,19 @@ A complete end-to-end ML system demonstrating advanced techniques for handling e
             │  │  - Time features     │  │
             │  │  - Interactions      │  │
             │  └──────────┬───────────┘  │
-            │             │               │
+            │             │              │
             │  ┌──────────▼───────────┐  │
             │  │  StandardScaler      │  │
             │  │  (fitted on train)   │  │
             │  └──────────┬───────────┘  │
-            │             │               │
+            │             │              │
             │  ┌──────────▼───────────┐  │
             │  │  Ensemble Model      │  │
             │  │  - Random Forest     │  │
             │  │  - XGBoost           │  │
             │  │  - Voting Classifier │  │
             │  └──────────┬───────────┘  │
-            │             │               │
+            │             │              │
             │  ┌──────────▼───────────┐  │
             │  │  SHAP Explainer      │  │
             │  │  - Feature Importance│  │
