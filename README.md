@@ -36,7 +36,7 @@ A complete end-to-end ML system demonstrating advanced techniques for handling e
  
 ## ✨ Key Features
  
-### 🤖 Machine Learning Excellence
+### 🤖 Machine Learning
 - **Ensemble Model**: Random Forest + XGBoost with soft voting
 - **Class Imbalance Solution**: SMOTE handling for 577:1 imbalance ratio
 - **Optimized Threshold**: 0.704 (tuned for business objectives)
@@ -178,12 +178,12 @@ A complete end-to-end ML system demonstrating advanced techniques for handling e
 ```
 realtime-fraud-detection-system/
 │
-├── 📓 notebooks/                          # Research & Development
+├── 📓 notebooks/                         # Research & Development
 │   ├── 01_eda.ipynb                      # Exploratory Data Analysis
 │   ├── 02_baseline_models.ipynb          # Baseline model experiments
 │   └── 03_advanced_modeling.ipynb        # Ensemble & optimization
 │
-├── 🔬 src/                               # Core ML Pipeline
+├── 🔬 src/                              # Core ML Pipeline
 │   ├── data/
 │   │   └── loader.py                    # Data loading & validation
 │   ├── features/
@@ -191,7 +191,7 @@ realtime-fraud-detection-system/
 │   └── models/
 │       └── train.py                     # Model training with SMOTE
 │
-├── 🚀 api/                               # Production API (FastAPI)
+├── 🚀 api/                              # Production API (FastAPI)
 │   ├── main.py                          # API endpoints & app config
 │   ├── models.py                        # Pydantic schemas
 │   ├── client.py                        # Python SDK
@@ -200,7 +200,7 @@ realtime-fraud-detection-system/
 │   ├── exceptions.py                    # Custom error handlers
 │   └── requirements.txt                 # API dependencies
 │
-├── 📊 dashboard/                         # Interactive UI (Streamlit)
+├── 📊 dashboard/                        # Interactive UI (Streamlit)
 │   ├── app.py                           # Main dashboard page
 │   ├── utils.py                         # Helper functions
 │   └── pages/
@@ -209,7 +209,7 @@ realtime-fraud-detection-system/
 │       ├── 03_batch_prediction.py       # Bulk processing
 │       └── 04_monitoring.py             # Performance tracking
 │
-├── 🤖 models/                            # Trained Models (7.4MB)
+├── 🤖 models/                           # Trained Models (7.4MB)
 │   ├── production_model_ensemble.pkl    # Ensemble model (5.7MB)
 │   ├── feature_engineer.pkl             # Feature transformer
 │   ├── scaler.pkl                       # StandardScaler
@@ -219,7 +219,7 @@ realtime-fraud-detection-system/
 ├── ⚙️ config/
 │   └── config.yaml                      # Centralized configuration
 │
-├── 🧪 tests/                             # Test Suite (50+ tests)
+├── 🧪 tests/                            # Test Suite (50+ tests)
 │   ├── unit/                            # Unit tests
 │   │   ├── test_model.py
 │   │   └── test_features.py
@@ -229,7 +229,7 @@ realtime-fraud-detection-system/
 │   │   └── test_data.py
 │   └── conftest.py                      # Pytest configuration
 │
-├── 🐳 deployment/                        # Production configs
+├── 🐳 deployment/                       # Production configs
 │   └── start.sh                         # Startup script
 │
 ├── 📦 Docker files
@@ -237,7 +237,7 @@ realtime-fraud-detection-system/
 │   ├── Dockerfile.hf                    # Hugging Face Space
 │   ├── docker-compose.yml               # Local development
 │
-├── data/                                 # Data directory (not in git)
+├── data/                                # Data directory (not in git)
 │   └── creditcard.csv                   # Credit card fraud dataset
 │
 └── 📋 Documentation
@@ -425,11 +425,9 @@ Transforms **30 raw features → 40 engineered features**
  
 #### Ensemble Composition
  
-**Model 1: Random Forest**
- 
-**Model 2: XGBoost**
- 
-**Ensemble Method**: `VotingClassifier` with soft voting (averages probabilities from both models)
+- **Model 1**: Random Forest
+- **Model 2**: XGBoost
+- **Ensemble Method**: `VotingClassifier` with soft voting (averages probabilities from both models)
  
 #### Threshold Optimization
  
@@ -472,6 +470,35 @@ Transforms **30 raw features → 40 engineered features**
 | **Ensemble (Production)** | **91.9%** | **80.6%** | **85.9%** | **98.5%** |
  
 *The ensemble achieves the best ROC-AUC while maintaining balanced precision and recall for production deployment.*
+ 
+---
+
+## 📈 Model Training Process
+ 
+The complete ML pipeline includes:
+ 
+### 1. Exploratory Data Analysis (`01_eda.ipynb`)
+- Dataset overview and statistics
+- Class distribution analysis (577:1 imbalance)
+- Feature correlation and relationships
+- Outlier detection and handling
+- Fraud pattern identification
+ 
+### 2. Baseline Models (`02_baseline_models.ipynb`)
+- Logistic Regression baseline (88% precision, 62% recall)
+- Decision Tree classifier experiments
+- Random Forest initial experiments
+- Model comparison and evaluation metrics setup
+ 
+### 3. Advanced Modeling (`03_advanced_modeling.ipynb`)
+- Feature engineering pipeline (30→40 features)
+- SMOTE implementation (0.1 ratio, 250K samples)
+- Random Forest with hyperparameter tuning
+- XGBoost optimization (scale_pos_weight=577)
+- Ensemble model creation (VotingClassifier)
+- Threshold optimization (0.704)
+- SHAP explainability integration
+- Model serialization and metadata
  
 ---
  
@@ -616,6 +643,20 @@ docker-compose up --build
 - **Streamlit**: Frontend dashboard
  
 ---
+
+## 🚀 API Endpoints Summary
+ 
+| Endpoint | Method | Description | Response Time |
+|----------|--------|-------------|---------------|
+| `/` | GET | Welcome message and API info | <5ms |
+| `/health` | GET | Health check and model status | <10ms |
+| `/predict` | POST | Single transaction prediction | <40ms |
+| `/predict/batch` | POST | Batch prediction (up to 100) | <1000ms |
+| `/analyze` | POST | Detailed analysis with SHAP | <100ms |
+| `/model/info` | GET | Model metadata and performance | <5ms |
+| `/docs` | GET | Interactive API documentation | <10ms |
+ 
+---
  
 ## 🧪 Testing
  
@@ -734,49 +775,6 @@ This project demonstrates proficiency in:
 - **User Interfaces**: Streamlit dashboard for business users
 - **API Design**: RESTful endpoints with comprehensive documentation
 - **Production Ready**: Complete system ready for deployment
- 
----
-  
-## 📈 Model Training Process
- 
-The complete ML pipeline includes:
- 
-### 1. Exploratory Data Analysis (`01_eda.ipynb`)
-- Dataset overview and statistics
-- Class distribution analysis (577:1 imbalance)
-- Feature correlation and relationships
-- Outlier detection and handling
-- Fraud pattern identification
- 
-### 2. Baseline Models (`02_baseline_models.ipynb`)
-- Logistic Regression baseline (88% precision, 62% recall)
-- Decision Tree classifier experiments
-- Random Forest initial experiments
-- Model comparison and evaluation metrics setup
- 
-### 3. Advanced Modeling (`03_advanced_modeling.ipynb`)
-- Feature engineering pipeline (30→40 features)
-- SMOTE implementation (0.1 ratio, 250K samples)
-- Random Forest with hyperparameter tuning
-- XGBoost optimization (scale_pos_weight=577)
-- Ensemble model creation (VotingClassifier)
-- Threshold optimization (0.704)
-- SHAP explainability integration
-- Model serialization and metadata
- 
----
-
-## 🚀 API Endpoints Summary
- 
-| Endpoint | Method | Description | Response Time |
-|----------|--------|-------------|---------------|
-| `/` | GET | Welcome message and API info | <5ms |
-| `/health` | GET | Health check and model status | <10ms |
-| `/predict` | POST | Single transaction prediction | <40ms |
-| `/predict/batch` | POST | Batch prediction (up to 100) | <1000ms |
-| `/analyze` | POST | Detailed analysis with SHAP | <100ms |
-| `/model/info` | GET | Model metadata and performance | <5ms |
-| `/docs` | GET | Interactive API documentation | <10ms |
  
 ---
  
